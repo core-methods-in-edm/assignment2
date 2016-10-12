@@ -107,5 +107,5 @@ vertex.size=
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
-Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. 
+Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
