@@ -2,7 +2,7 @@
 title: "Assignment 6 - Social Network Analysis"
 author: "Charles Lang"
 date: "Oct 13, 2016"
-output: html_document
+output: pdf_document
 ---
 
 In Assignment 2 we will be looking at some disciplinary data from a middle school. The file "discipline-data.csv" shows which teacher sent which student to the principal during the semester.
@@ -17,8 +17,10 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
-```{r}
+```{r,eval=FALSE}
+
 D1$stid <- as.factor(D1$stid)
+
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -27,7 +29,7 @@ So let's convert our data into an edge list!
 
 First we will isolate the variables that are of interest: tid and stid
 
-```{r}
+```{r,eval=FALSE}
 library(dplyr)
 
 D2 <- dplyr::select(D1, tid, stid)
@@ -35,7 +37,7 @@ D2 <- dplyr::select(D1, tid, stid)
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
-```{r}
+```{r,eval=FALSE}
 
 EDGE <- dplyr::count(D2, tid, stid)
 
@@ -45,7 +47,7 @@ names(EDGE) <- c("from", "to", "count")
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
 
-```{r}
+```{r,eval=FALSE}
 
 #First we will separate the teachers from our original data frame
 V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
@@ -65,12 +67,11 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
-
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
 
-```{r}
+```{r,eval=FALSE}
 #Load the igraph package
 
 library(igraph)
@@ -95,12 +96,15 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 #Arrow size
 edge.arrow.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size = 0.38)
 
 #Remove the labels
 vertex.label=NA
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size = 0.38,vertex.label=NA)
 
 #Vertex size
 vertex.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size = 0.38, vertex.size = 25)
   
 #And many others!
 ```
@@ -108,4 +112,205 @@ vertex.size=
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r,eval=FALSE}
+> library(dplyr)
+> data_long <- tidyr::gather(D4,Full.name,Course1,Course2,Course3,Course4,Course5)
+Warning message:
+attributes are not identical across measure variables; they will be dropped 
+> Course <- dplyr::select(D4,Course1,Course2,Course3,Course4,Course5)
+> course_long<-tidyr::gather(Course)
+Warning message:
+attributes are not identical across measure variables; they will be dropped 
+> Course_long <- unique(course_long)
+> C1<-na.omit(course_long)
+> course_long$value <- ifelse(course_long$value == "",NA,Course_long$value)
+> Cl<-na.omit(course_long)
+> library(tidyr)
+> D8<- tidyr::gather(D4,Full.name)
+Warning message:
+attributes are not identical across measure variables; they will be dropped 
+> names(D8) <- c("Full.name","Course.number","Class.name")
+> Student_data <- tidyr::spread(D8, Course.number, Class.name)
+> Student_data <- tidyr::spread(D8,Full.name, Class.name)
+> View(Student_data)
+> Student_data <- tidyr::spread(D8,Full.name, Class.name)
+> View(Student_data)
+> ?count
+> count(D8,Class.name)
+# A tibble: 38 × 2
+   Class.name     n
+        <chr> <int>
+1                54
+2    CCPX4150     1
+3     EDP7500     1
+4    EDPA5023     1
+5    EDPA6027     2
+6    EDPA6030     1
+7    EDPE4058     1
+8    EDPE6900     1
+9       G4050     1
+10     GR5705     1
+# ... with 28 more rows
+> Course <- dplyr::select(D8,Full.name,Class.name)
+> View(Course)
+> Course <- unique(Course)
+> C3<-na.omit(Course)
+> D9 <- tidyr::spread(D8,Class.name)
+Error: Please supply column name
+> D9 <- dplyr::filter(D8,NA)
+> D9 <- dplyr::filter(Course, Class.name > 0 )
+> View(D9)
+> D10 <- table(D9)
+> data <- as.matrix(D10,row.names=1)
+> person.net <- data %*% t(data)
+> group.net <- t(data) %*% data
+> diag(group.net) <- NA
+> diag(person.net) <- NA
+> 
+> person.g <- graph.adjacency(person.net,mode="undirected",
++                             weighted=NULL, diag=FALSE)
+Error: could not find function "graph.adjacency"
+> 
+> 
+> group.g <- graph.adjacency(group.net, weighted=TRUE,
++                            mode="undirected", diag=FALSE)
+Error: could not find function "graph.adjacency"
+> 
+> View(group.net)
+> View(person.net)
+> View(group.net)
+> person.g <- graph.adjacency(person.net,mode="undirected",
++                             weighted=NULL, diag=FALSE)
+Error: could not find function "graph.adjacency"
+> View(group.net)
+> View(person.net)
+> library(igraph)
+
+Attaching package: ‘igraph’
+
+The following objects are masked from ‘package:tidyr’:
+
+    %>%, crossing
+
+The following objects are masked from ‘package:dplyr’:
+
+    %>%, as_data_frame, groups, union
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+> person.g <- graph.adjacency(person.net,mode="undirected",
++                             weighted=NULL, diag=FALSE)
+> 
+> 
+> group.g <- graph.adjacency(group.net, weighted=TRUE,
++                            mode="undirected", diag=FALSE)
+> 
+> la2 <- layout.fruchterman.reingold(group.g)
+> e.wt <- get.edge.attribute(group.g, "weight")
+> View(la2)
+> pdf(file="figures/group-view.pdf", width=10, height=10)
+Error in pdf(file = "figures/group-view.pdf", width = 10, height = 10) : 
+  cannot open file 'figures/group-view.pdf'
+> plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+Error in i.parse.plot.params(graph, list(...)) : object 'la' not found
+> dev.off()
+Error in dev.off() : cannot shut down device 1 (the null device)
+> ?pdf
+> plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+Error in i.parse.plot.params(graph, list(...)) : object 'la' not found
+> dev.off()
+Error in dev.off() : cannot shut down device 1 (the null device)
+> plot(group.g, layout=la2, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+> dev.off()
+null device 
+          1 
+> plot(group.g, layout=la2, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+> la <- layout.fruchterman.reingold(person.g)
+> e.wt2 <- get.edge.attribute(person.g, "weight")
+> plot(person.g, layout=la2, vertex.size=3,edge.width=0.1,
++      vertex.label=V(person.g)$name)
+Warning messages:
+1: In layout[, 1] + label.dist * cos(-label.degree) * (vertex.size +  :
+  longer object length is not a multiple of shorter object length
+2: In layout[, 2] + label.dist * sin(-label.degree) * (vertex.size +  :
+  longer object length is not a multiple of shorter object length
+> la <- layout.fruchterman.reingold(person.g)
+> e.wt <- get.edge.attribute(person.g, "weight")
+> plot(person.g, layout=la2, vertex.size=3,edge.width=0.1,
++      vertex.label=V(person.g)$name)
+Warning messages:
+1: In layout[, 1] + label.dist * cos(-label.degree) * (vertex.size +  :
+  longer object length is not a multiple of shorter object length
+2: In layout[, 2] + label.dist * sin(-label.degree) * (vertex.size +  :
+  longer object length is not a multiple of shorter object length
+> btwn.person <- betweenness(person.g)
+> names(btwn.person) <- V(person.g)$name
+> ind <- order(-btwn.person)
+> btwn.person[ind][1:10]
+  Joonyoung_Park Benjamin_Roberts       Chuheng_Hu       David_Cody     David_Nitkin      David_Rudel       Devan_Goto 
+              25                0                0                0                0                0                0 
+   Jiaqing_Zhang         Jiaxi_Li          Jie_Gao 
+               0                0                0 
+> cent.eig <- evcent(person.g)
+> names(cent.eig$vector) <- V(person.g)$name
+> ind <- order(-cent.eig$vector)
+> cent.eig$vector[ind][1:10]
+      David_Cody       Devan_Goto          Jie_Gao    Jingtong_Feng    Samantha_Pepe       Chuheng_Hu      Shreya_Goel 
+       1.0000000        1.0000000        1.0000000        0.9683869        0.9457012        0.9457012        0.8355883 
+Jonathan_Stelman    Lauren_Romine   Joshua_Coleman 
+       0.8085635        0.8085635        0.8085635 
+> cent.klein <- authority.score(person.g)
+> names(cent.klein$vector) <- V(person.g)$name
+> ind <- order(-cent.klein$vector)
+> cent.klein$vector[ind][1:10]
+      David_Cody       Devan_Goto          Jie_Gao    Jingtong_Feng       Chuheng_Hu    Samantha_Pepe      Shreya_Goel 
+       1.0000000        1.0000000        1.0000000        0.9683869        0.9457012        0.9457012        0.8355883 
+Jonathan_Stelman   Joshua_Coleman    Lauren_Romine 
+       0.8085635        0.8085635        0.8085635 
+> 
+> cent.bonpow <- bonpow(person.g, exponent=1)
+> names(cent.bonpow) <-  V(person.g)$name
+> ind <- order(cent.bonpow)
+> cent.bonpow[ind][1:10]
+             Jiaxi_Li            Lauren_Fox Ngoc Bich (Gemy)_Pham     Victoria_Bertotti               Wei_Wei 
+            -1.225884             -1.225884             -1.225884             -1.225884             -1.225884 
+       Xiaoting_Kuang          ZhiJun_Huang          David_Nitkin           David_Rudel         Jiaqing_Zhang 
+            -1.225884             -1.225884             -1.225884             -1.225884             -1.225884 
+> 
+> ind <- cent.bonpow < -1.35
+> 
+> col.vec <- rep("")
+> 
+> pdf(file="figures/revere-network-reduced.pdf", width=22, height=17,pointsize=8)
+Error in pdf(file = "figures/revere-network-reduced.pdf", width = 22,  : 
+  cannot open file 'figures/revere-network-reduced.pdf'
+> person.g.copy <- person.g
+> la <- layout.fruchterman.reingold(person.g.copy)
+> plot(person.g.copy, layout=la, vertex.size=3,
++      vertex.label=V(person.g.copy)$name)
+> dev.off()
+null device 
+          1 
+> png(file="figures/revere-network-reduced.png", width=2200, height=1700, res=140)
+> person.g.copy <- person.g
+> la <- layout.fruchterman.reingold(person.g.copy)
+> plot(person.g.copy, layout=la, vertex.size=3,
++      vertex.label=V(person.g.copy)$name)
+> dev.off()
+Error in dev.off() : 
+  QuartzBitmap_Output - unable to open file 'figures/revere-network-reduced.png'
+> plot(person.g.copy, layout=la, vertex.size=3,
++      vertex.label=V(person.g.copy)$name)
+```
 
