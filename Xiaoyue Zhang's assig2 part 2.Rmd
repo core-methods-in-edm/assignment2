@@ -1,0 +1,76 @@
+---
+title: "person network"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(igraph)
+```
+first, we gotta modify the data frame
+```{r}
+D_1 <- read.table("C:/Users/Nino Zhang/Documents/Nino Zhang/study at TC/fall 2016/EDM/assignment2/hudk4050-classes.csv", sep =",", header=TRUE)
+D_2 <- tidyr::unite(D_1, students, First.name, Last.name)
+```
+
+```{r}
+D_2$students <- as.factor(D_2$students)
+```
+
+```{r}
+D_3 <- tidyr::gather(D_2, students, amount)
+names(D_3) <- c("studentnames", "amount", "coursenames")
+```
+
+then we can do the edge list
+
+```{r}
+EDGE_1 <- dplyr::count(D_3, studentnames, coursenames )
+EDGE_1 <- dplyr::filter(EDGE_1, coursenames !="")
+names(EDGE_1) <- c("from", "to", "count")
+```
+
+Now we need to make the vertex list, a list of all the courses and students.
+
+```{r}
+
+#First we will separate the students from our original data frame
+V.stu <- dplyr::select(D_3,studentnames)
+#Remove all the repeats
+V.stu <- unique(V.stu)
+#Add a variable that describes that they are teachers
+V.stu$group <- "students"
+
+#Now repeat this process for the courses
+V.cour <- dplyr::select(D_3, coursenames)
+V.cour <- unique(V.cour)
+V.cour$group <- "courses"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.stu) <- c("ID", "group")
+names(V.cour) <- c("ID", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.stu, V.cour)
+
+```
+
+Now we have both a Vertex and Edge list it is time to plot our graph!
+
+```{r}
+#Load the igraph package
+
+library(igraph)
+g <- graph.data.frame(EDGE_1, directed=TRUE, vertices=VERTEX)
+#Now we can plot our graph using the force directed graphing technique
+plot(g,layout=layout.fruchterman.reingold)
+#Other attributes you may want to change are:
+
+#Arrow size
+edge.arrow.size = 5
+
+#Remove the labels
+#vertex.label=
+
+#Vertex size
+vertex.size=5
+```
