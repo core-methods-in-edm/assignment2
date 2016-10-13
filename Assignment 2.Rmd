@@ -12,16 +12,20 @@ We will be using the "igraph" package to visualize the disciplinary relationship
 http://igraph.org/r/
 
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
-
+```{r}
+library(igraph)
+```
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
-
+```{r}
+D1 <- read.csv("discipline-data.csv")
+```
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
 D1$stid <- as.factor(D1$stid)
 ```
 
-igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
+igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertex list contains all the characteristics of those vertices, in our case gender and major.
 
 So let's convert our data into an edge list!
 
@@ -94,15 +98,32 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 #Other attributes you may want to change are:
 
 #Arrow size
-edge.arrow.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count, edge.arrow.size=0.3)
+
 
 #Remove the labels
-vertex.label=NA
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count, edge.arrow.size=0.3,vertex.label=NA)
+
 
 #Vertex size
-vertex.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size=0.3,vertex.label=NA,vertex.size=20)
   
 #And many others!
+V(g)$color=V(g)$topic
+V(g)$color=gsub("art","aquamarine",V(g)$color)
+V(g)$color=gsub("biology","grey94",V(g)$color)
+V(g)$color=gsub("english","pink",V(g)$color)
+V(g)$color=gsub("math","lightgoldenrod1",V(g)$color)
+V(g)$shape <- ifelse(VERTEX$group == "student", "circle", "square")
+V(g)$size <- ifelse(VERTEX$group == "student", 20, 15)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=V(g)$color, edge.width=EDGE$count,edge.lty=6,edge.arrow.size=0.3, vertex.size=V(g)$size, vertex.label.color="grey", vertex.frame.color=VERTEX$gender,vertex.shape=V(g)$shape, frame=F, main = "Network Plot of Teachers and Students", margin = 0.01)
+
+legend_color <- c("aquamarine","grey94","pink","lightgoldenrod1")
+legend(x=1.1, y=1, c("art","biology","english","math"), pch=21,col= "white", pt.bg = legend_color, pt.cex=2, cex=.8, bty="n", ncol=1)
+
+legend(x=1.1, y=0.1, c("F","M"), pch=21,col= c("orange","royalblue"), pt.cex=2,cex=.8, bty="n", ncol=1)
+
+#legend(x=1.5, y=0.1, c("Teacher","Student"), pch=21,col = "black", pt.cex=2,cex=.8, bty="n", ncol=1)
 ```
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
