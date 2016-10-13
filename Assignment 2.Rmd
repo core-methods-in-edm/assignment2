@@ -14,6 +14,9 @@ http://igraph.org/r/
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1<-read.csv("discipline-data.csv",sep=",",header= TRUE)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -34,11 +37,11 @@ D2 <- dplyr::select(D1, tid, stid)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
-
+note: this is to count the times of each teacher's interaction with each student 
 ```{r}
 
 EDGE <- dplyr::count(D2, tid, stid)
-
+#change the header name to make it more interpretable
 names(EDGE) <- c("from", "to", "count")
 
 ```
@@ -78,6 +81,7 @@ library(igraph)
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+##??what's the difference between graphdataframe and graphadjacency
 
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
 
@@ -103,6 +107,7 @@ vertex.label=NA
 vertex.size=
   
 #And many others!
+plot(g,layout=layout.fruchterman.reingold,vertex.color=VERTEX$gender,edge.width=EDGE$count,vertex.size=20,edge.arrow.size=1)
 ```
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
