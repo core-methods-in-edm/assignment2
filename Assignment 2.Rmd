@@ -74,7 +74,6 @@ Now we have both a Vertex and Edge list it is time to plot our graph!
 #Load the igraph package
 
 library(igraph)
-
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
@@ -94,13 +93,13 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 #Other attributes you may want to change are:
 
 #Arrow size
-edge.arrow.size=
+edge.arrow.size=1.1
 
 #Remove the labels
 vertex.label=NA
 
 #Vertex size
-vertex.size=
+vertex.size=20
   
 #And many others!
 ```
