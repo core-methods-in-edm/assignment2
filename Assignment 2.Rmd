@@ -2,7 +2,7 @@
 title: "Assignment 6 - Social Network Analysis"
 author: "Charles Lang"
 date: "Oct 13, 2016"
-output: html_document
+output: word_document
 ---
 
 In Assignment 2 we will be looking at some disciplinary data from a middle school. The file "discipline-data.csv" shows which teacher sent which student to the principal during the semester.
@@ -13,7 +13,15 @@ http://igraph.org/r/
 
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+```{r}
+library(igraph)
+```
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1<-read.csv("discipline-data.csv")
+```
+
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -71,9 +79,9 @@ VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
 Now we have both a Vertex and Edge list it is time to plot our graph!
 
 ```{r}
-#Load the igraph package
+ #Load the igraph package
 
-library(igraph)
+ library(igraph)
 
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
@@ -94,13 +102,13 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 #Other attributes you may want to change are:
 
 #Arrow size
-edge.arrow.size=
+#edge.arrow.size=
 
 #Remove the labels
-vertex.label=NA
+#vertex.label=NA
 
 #Vertex size
-vertex.size=
+#vertex.size=
   
 #And many others!
 ```
@@ -108,4 +116,133 @@ vertex.size=
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+
+```{r}
+#Load data
+E1<-read.csv("hudk4050-classes.csv")
+#Load Dplyr
+library("dplyr")
+
+#combine first name and last name
+E1$name<-do.call(paste, c(E1[c("First.name", "Last.name")], sep=""))
+
+#gather and subest the data
+p<-E1 %>% tidyr::gather(course, classes, 3:7)
+p2<- p %>% dplyr::select(name, classes)
+
+ # Assign NA to the blank classes so we can later omit them
+p2[p2==""] <- NA
+p2NA<-na.omit(p2)
+
+#Convert to matrix
+p2c<-data.matrix(p2NA$classes)
+p2n<-data.matrix(p2NA$name)
+
+# Now we loop through the data, if two classes are the same, we make vectors with the names of each in the class.
+
+i=2
+j=1
+idx=1
+x<-0
+y<-0
+
+while(j<140){
+  i=1
+while(i<140){
+if(identical(p2c[i], p2c[j])){
+  x[idx]<-p2n[i] 
+  y[idx]<-p2n[j]
+  idx=idx+1
+  
+}
+
+i=i+1
+ }
+j=j+1
+}
+
+#Reformat the data: remove NA, convert to matrix, bind the two matrices, give the columns names
+x1<-na.omit(x)
+y1<-na.omit(y)
+x2<-data.matrix(x1)
+y2<-data.matrix(y1)
+newdata<-cbind2(x2,y2)
+names(newdata) <- c("from", "to")
+
+
+# Manipulate data
+
+counts<-matrix( rep( 1, len=918), nrow = 918)
+newdata2<-cbind(newdata, counts)
+newdata2<-data.frame(newdata2)
+names(newdata2) <- c("from", "to")
+
+
+from<-as.character(newdata2$from)
+to<-as.character(newdata2$to)
+
+i=1
+idx=1
+x<-0
+y<-0
+
+while(i<918){
+if(identical(to[i],from[i])){
+  
+  i=i+1 }
+  else{
+    x[idx]<-to[i] 
+    y[idx]<-from[i]
+    idx=idx+1
+  
+}
+
+i=i+1
+}
+
+counts<-matrix( rep( 1, len=773), nrow = 773)
+counts2<-as.numeric(counts)
+newdata3<-cbind(x,y,counts2)
+newdata3<-as.data.frame(newdata3)
+names(newdata3) <- c("to", "from", "counts")
+
+
+library(plyr)
+newdata3$counts<-as.numeric(newdata3$counts)
+
+newdata4<-ddply(newdata3, .(from,to), summarize, counts = sum(counts))
+
+
+#Now lets graph!
+library(igraph)
+
+#t1 are the edges
+
+t1<-unique(p$name)
+
+#now we can graph
+
+g <- graph.data.frame(newdata4, directed=TRUE, vertices=t1)
+
+#plot graph
+
+
+plot(g,layout=layout.fruchterman.reingold, vertex.label=NA)
+
+#It's ugly, but its something.
+
+# Lets take away this class and see who is still connected! 
+newdata5<-subset(newdata4, counts!=1)
+g2 <- graph.data.frame(newdata5, directed=TRUE, vertices=t1)
+plot(g2,layout=layout.fruchterman.reingold)
+# Im not connected to anyone outside of class.
+
+betw<-estimate_betweenness(g, vids = V(g), directed = TRUE, cutoff=10, weights = NULL, nobigint = TRUE)
+
+betw
+max(betw)
+# =Joshua Coleman 1.179176
+```
+
 
