@@ -111,6 +111,7 @@ Once you have done this you need to practice with data from our class. Please cr
 
 Joonyoung most central person..Dave,Devan, and Jie have highest degree 
 
+```{r}
 library(dplyr)
 library(igraph)
 Z1<-read.csv("hudk4050-classes.csv")
@@ -238,3 +239,4 @@ degree(person.g, v = V(person.g), mode = c("all", "out", "in", "total"),
                        25                        29                        25 
              Zhuqian Zhou 
                        36 
+```
