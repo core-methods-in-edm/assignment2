@@ -98,6 +98,9 @@ edge.arrow.size=
 
 #Remove the labels
 vertex.label=NA
+```
+
+```
 
 #Vertex size
 vertex.size=
@@ -109,3 +112,85 @@ Play around with different graphs and then save your final version to the repo. 
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+#make a new column for combined name
+classes$name <- do.call(paste, c(classes[c("First.name", "Last.name")], sep = " ")) 
+#take out first and last name columns by creating new table
+ C2 <- dplyr::select(classes, name, Course1, Course2, Course3, Course4, Course5)
+ #make all the courses into one long column
+ C3 <- tidyr::gather(C2, "course", col = 2:6, na.rm = TRUE)
+C4 <- tidyr::separate(C3, "name", "value") 
+#remove blanks from value (list of courses)
+C4 <- tidy::filter(C3, "value" > 0 )
+#take out list of course1, etc.
+ C4 <- dplyr::select(C4, name, value)
+#add in column for count 
+> C4$count <- "1"
+ #change table for courses as columns with count for individuals
+> C5 <- tidyr::spread(C4, "value", "count")
+ #turn NAs into 0s
+  C5[is.na(C5)] <- 0
+  
+  
+  #trying to add count instead of "1"
+  C4 <- dplyr::count(C4, name, value)
+  #remove rows where no course is listed
+  C4 <- dplyr::filter(C4, value > 0)
+  #reshape
+  C5 <- tidyr::spread(C4, "value", "n")
+  
+  C6 <- as.matrix(C5)
+  #non numeric error. 
+  #remove NAs
+  C6[is.na(C6)] <- 0
+  #still non numeric
+
+  
+  
+  > colnames(C6) <- as.character(C6[1,])
+> View(C6)
+> C6 <- dplyr::filter(C6, )
+  
+  
+  
+  
+  ###### Starting over. 
+  
+  #make the new full name column
+  E$Name <- do.call(paste, c(E[c("First.name", "Last.name")], sep = " "))
+  
+  #new data frame with Name and course 1-5
+  E1 <- dplyr::select(E, Name, Course1, Course2, Course3, Course4, Course5)
+  
+  #combine all courses into one column
+  E2 <- tidyr::gather(E1, "number", "Course", col = 2:6, na.rm = TRUE)
+  
+  #drop course number column
+  E2 <- dplyr::select(E2, Name, Course)
+  
+  #remove rows with no course listed
+  E2 <- dplyr::filter(E2, Course > 0)
+  
+  #add count 
+  E3 <- dplyr::count(E2, Name, Course)
+  
+  #make courses into columns with 0 or 1 against names
+  E4 <- tidyr::spread(E3, Course, n, fill = 0)
+  
+  #now the problem: name is a column with names (characters) whereas I want it to be the row names so that all the table data is 1 or 0
+  
+  #try with Name as columns instead of course
+  E5 <- tidyr::spread(E3, Name, n, fill = 0)
+  
+  #remove columb with Course names
+  E6 <- dplyr::select(E5, -Course)
+  
+  #set people (and an extra, because I don't know what diag might do yet *just removes connection with themselves)
+  people <- E6 %% t(E6)
+  people1 <- people
+  
+  #with diag
+  diag(people1) <- NA
+  
+  
+  
