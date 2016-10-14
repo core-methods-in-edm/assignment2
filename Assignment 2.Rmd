@@ -187,3 +187,6 @@ between.person[b.m][1:10]
 #Degree Measure
 
 > degree(person.graph, v = V(person.graph), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
+
+```
+The most central person is Joon.
