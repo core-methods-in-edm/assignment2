@@ -2,7 +2,7 @@
 title: "Assignment 6 - Social Network Analysis"
 author: "Charles Lang"
 date: "Oct 13, 2016"
-output: word_document
+output: word_document-
 ---
 
 In Assignment 2 we will be looking at some disciplinary data from a middle school. The file "discipline-data.csv" shows which teacher sent which student to the principal during the semester.
