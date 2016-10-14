@@ -192,5 +192,50 @@ C4 <- tidy::filter(C3, "value" > 0 )
   #with diag
   diag(people1) <- NA
   
+   #errors. quitting fot the day.
   
+  
+  #restarting fresh, again. 
+  
+  #set up initial table view
+  hud <- read.csv("hudk4050-classes.csv")
+  #View(hud)
+  
+  #create column for full name
+  hud$Name <- paste(hud$First.name, hud$Last.name, sep = " ")
+  
+  #new table with names and five columns of course names
+  hud1 <- dplyr::select(hud, Name, Course1, Course2, Course3, Course4, Course5)
+  
+  #new table with all courses in one column
+   hud2 <- tidyr::gather(hud1, Number, Course, col = 2:6, na.rm = TRUE)
+   
+   #remove list of course number for person
+   hud2 <- dplyr::select(hud2, Name, Course)
+   
+   #add count for people/courses in new table
+   hud3 <- dplyr::count(hud2, Name, Course)
+   
+   #remove rows where course is empty 
+   hud3 <- dplyr::filter(hud3, Course > 0)
+   
+  #plotted like student discipline above, not pretty but functional:
+   h <- graph.data.frame(hud3, directed = FALSE, vertices = NULL)
+   plot(h, layout=layout.fruchterman.reingold)
+   
+   #with direction, but not terribly meaningful here:
+   h1 <- graph.data.frame(hud3, directed = TRUE, vertices = NULL)
+   plot(h1, layout=layout.fruchterman.reingold)
+   
+   #stil error for revere style:
+   people <- hud3 %% t(hud3)
+   #Error in FUN(left, right) : non-numeric argument to binary operator
+   
+   people <- h %% t(h)
+   #Error in h%%t(h) : non-numeric argument to binary operator
+
+   ```
+   
+   
+   
   
