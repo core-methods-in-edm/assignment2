@@ -138,13 +138,13 @@ STU$group <- "student"
 COURSE<-dplyr::select(H6nona,name)
 COURSE<-unique(COURSE)
 COURSE$group<-"course"
-names(STU)<-c("name","group")
-names(COURSE)<-("name" ,"group")
+names(STU)<-c("name","group") 
+names(COURSE)<-("name","group")
 VERTEX2 <- dplyr::bind_rows(STU, COURSE)
 ```
 PLOT the most popular course
 ```{r}
 g2 <- graph.data.frame(EDGE2, directed=TRUE, vertices=VERTEX2)
-plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,vertex.label=NA,edge.arrow.size=0.5)
+plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,vertex.label=TRUE,edge.arrow.size=0.6)
 ```
 
