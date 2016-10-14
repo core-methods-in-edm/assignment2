@@ -87,6 +87,7 @@ plot(g,layout=layout.fruchterman.reingold)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
+
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
@@ -103,6 +104,11 @@ vertex.label=NA
 vertex.size=
   
 #And many others!
+### Repo of graph 
+e.wt <- get.edge.attribute(g, "weight")
+png(file="figures/Teachers-Students Repo.png", width=800, height=800, res=150)
+plot(g, layout=layout.fruchterman.reingold, vertex.size=5,edge.width=e.wt,vertex.label=V(g)$name,vertex.color=VERTEX$gender)
+dev.off()
 ```
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
