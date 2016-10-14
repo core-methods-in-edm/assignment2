@@ -109,3 +109,132 @@ Play around with different graphs and then save your final version to the repo. 
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+Joonyoung most central person..Dave,Devan, and Jie have highest degree 
+
+library(dplyr)
+library(igraph)
+Z1<-read.csv("hudk4050-classes.csv")
+Z1<-as.data.frame(Z1)
+#data read into R as data frame
+Z1$FullName <- do.call(paste, c(Z1[c("First.name", "Last.name")], sep = " "))
+#Combines first and last name to full name in 1 cell
+Z2<-Z1%>% tidyr ::gather(Newcol,classes,3:7)
+#gathers all classes into 1
+Z3 <- Z2[-which(g$classes == ""), ]
+Z4 <- subset(Z3, select = -c(First.name,Last.name,Newcol))
+name<-c(Z4$FullName)
+class<-c(Z4$classes)
+data<-data.frame(name,class)
+data<-xtabs(Col~name+class,cbind(data,Col=1))
+# at this point 3 columns.. name, class, and 1 or 0 binary
+person.net <- data %*% t(data)
+group.net <- t(data) %*% data
+#transposes names and classes into diagonals
+diag(group.net) <- NA
+diag(person.net) <- NA
+person.g <- graph.adjacency(person.net,mode="undirected",weighted=NULL,diag=FALSE)
+group.g <- graph.adjacency(group.net, weighted=TRUE,mode="undirected",diag=FALSE)
+la <- layout.fruchterman.reingold(group.g)
+e.wt <- get.edge.attribute(group.g, "weight")
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,vertex.label=V(group.g$name)
++ )
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,vertex.label=V(group.g$name)      
++ )
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+dev.off()
+null device 
+          1 
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(group.g)$name)
+dev.off()
+null device 
+          1 
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=3,edge.width=0.1,
++      vertex.label=V(person.g)$name)
+dev.off()
+null device 
+          1 
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=3,edge.width=0.1,
++      vertex.label=V(person.g)$name)
+dev.off()
+null device 
+          1 
+data.t <- t(data)
+person2.net <- data %*% t(data)
+diag(person2.net) <- NA
+person2.g <- graph.adjacency(person2.net, mode="undirected", weighted=TRUE, diag=FALSE)
+la <- layout.fruchterman.reingold(person2.g)
+e.wt <- get.edge.attribute(person2.g, "weight")
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(person2.g)$name)
+dev.off()
+null device 
+          1 
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt,
++      vertex.label=V(person2.g)$name)
+dev.off()
+null device 
+          1 
+          
+#betweeness measure
+btwn.person <- betweenness(person.g)
+names(btwn.person) <- V(person.g)$name
+ind <- order(-btwn.person)
+btwn.person[ind][1:10]
+  Joonyoung Park Benjamin Roberts       Chuheng Hu       David Cody     David Nitkin 
+              25                0                0                0                0 
+     David Rudel       Devan Goto    Jiaqing Zhang         Jiaxi Li          Jie Gao 
+               0                0                0                0                0 
+#centrality measure
+cent.bonpow <- bonpow(person.g, exponent=1)
+names(cent.bonpow) <-  V(person.g)$name
+ind <- order(cent.bonpow)
+cent.bonpow[ind][1:28]
+                 Jiaxi Li                Lauren Fox     Ngoc Bich (Gemy) Pham 
+               -1.2258845                -1.2258845                -1.2258845 
+        Victoria Bertotti                   Wei Wei            Xiaoting Kuang 
+               -1.2258845                -1.2258845                -1.2258845 
+             ZhiJun Huang              David Nitkin               David Rudel 
+               -1.2258845                -1.2258845                -1.2258845 
+            Jiaqing Zhang          Jonathan Stelman            Robert Jackson 
+               -1.2258845                -1.1518129                -1.1518129 
+           Joshua Coleman             Lauren Romine              Zhuqian Zhou 
+               -1.1518129                -1.1518129                -1.1518129 
+              Shreya Goel             Jingtong Feng                Chuheng Hu 
+               -1.1221843                -0.8555266                -0.8110837 
+            Samantha Pepe          Benjamin Roberts                David Cody 
+               -0.8110837                -0.8036765                -0.6777549 
+                  Jie Gao                Devan Goto            Joonyoung Park 
+               -0.6777549                -0.6777549                -0.5629439 
+             Xiangyu Wang             Xiaoyue Zhang                 Linh Doan 
+               -0.5222046                -0.5222046                 0.0000000 
+Magdalena Bennett Colomer                    
+                0.3814686   
+ #degree measure
+degree(person.g, v = V(person.g), mode = c("all", "out", "in", "total"),
++        loops = TRUE, normalized = FALSE)
+         Benjamin Roberts                Chuheng Hu                David Cody 
+                       27                        41                        43 
+             David Nitkin               David Rudel                Devan Goto 
+                       25                        25                        43 
+            Jiaqing Zhang                  Jiaxi Li                   Jie Gao 
+                       25                        25                        43 
+            Jingtong Feng          Jonathan Stelman            Joonyoung Park 
+                       42                        36                        26 
+           Joshua Coleman                Lauren Fox             Lauren Romine 
+                       36                        25                        36 
+                Linh Doan Magdalena Bennett Colomer     Ngoc Bich (Gemy) Pham 
+                        0                         1                        25 
+           Robert Jackson             Samantha Pepe               Shreya Goel 
+                       36                        41                        37 
+        Victoria Bertotti                   Wei Wei              Xiangyu Wang 
+                       25                        25                        29 
+           Xiaoting Kuang             Xiaoyue Zhang              ZhiJun Huang 
+                       25                        29                        25 
+             Zhuqian Zhou 
+                       36 
