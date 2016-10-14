@@ -128,5 +128,74 @@ legend(x=1.1, y=0.1, c("F","M"), pch=21,col= c("orange","royalblue"), pt.cex=2,c
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
-Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?** Joonyoung Park.
+```{r}
+#load packages
+library(igraph)
+library(dplyr)
+library(tidyr)
+#load data
+classes_data <- as.data.frame(read.csv("hudk4050-classes.csv"))
+#combine to first and last to full name
+classes_data$Full.name = paste(classes_data$First.name, classes_data$Last.name, sep=" ")
+classes_data <- classes_data[,c(8,3:7)]
+#combine courses into a column
+classes_long <- classes_data %>% gather(List, Courses, Course1:Course5)
+#delete empty rows
+classes_long <- classes_long %>% filter(Courses != "")
+#select full.name and courses
+classes <- classes_long %>% select(Full.name, Courses)
+#convert to workable form
+data <- table(classes)
+#creating matrices of students and courses
+person.net <- data %*% t(data)
+group.net <- t(data) %*% data
+diag(person.net) <- NA
+diag(group.net) <- NA
 
+person.g <- graph.adjacency(person.net,mode="undirected", weighted=NULL, diag=FALSE)
+
+group.g <- graph.adjacency(group.net, weighted=TRUE,mode="undirected", diag=FALSE)
+
+#plot person
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=10,edge.width=0.5, vertex.label=V(person.g)$name)
+
+
+#plot group
+la <- layout.fruchterman.reingold(group.g)
+e.wt <- get.edge.attribute(group.g, "weight")
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(group.g)$name)
+
+#plot person (weighted)
+data.t <- t(data)
+person2.net <- data %*% t(data)
+diag(person2.net) <- NA
+person2.g <- graph.adjacency(person2.net, mode="undirected", weighted=TRUE, diag=FALSE)
+la <- layout.fruchterman.reingold(person2.g)
+e.wt <- get.edge.attribute(person2.g, "weight")
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(person2.g)$name)
+
+#betweeness
+btwn.person <- betweenness(person.g)
+names(btwn.person) <- V(person.g)$name
+ind <- order(-btwn.person)
+btwn.person[ind][1:28]
+
+#centrality (Bonacich Power Centrality Scores)
+cent.bonpow <- bonpow(person.g, exponent=1)
+names(cent.bonpow) <-  V(person.g)$name
+ind <- order(cent.bonpow)
+cent.bonpow[ind][1:28]
+
+#degree
+degree(person.g, v = V(person.g), mode = c("all", "out", "in", "total"), loops = TRUE, normalized = FALSE)
+```
+#Failed Method 1
+#classes <- classes_long %>% spread(Full.name, List)
+#convert to binery
+#classes[is.na(classes)] <- 0
+#classes[,-1] <- apply(classes[,-1], c(1,2), function(x) ifelse(x != 0, 1, x))
+#classes[,-1] <- sapply(classes[,-1 ], as.numeric)
+#data <- as.matrix(classes)
