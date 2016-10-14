@@ -110,3 +110,59 @@ Play around with different graphs and then save your final version to the repo. 
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+
+```{r}
+install.packages("igraph")
+install.packages("tidyr")
+install.packages("dplyr")
+library(igraph)
+library(tidyr)
+library(dplyr)
+
+
+P1 <- read.csv("E:/TC/4050/GITHUB/assignment2/hudk4050-classes.csv", header = TRUE)
+FullName <- as.data.frame(P1)
+
+P1$FullName <- do.call(paste, c(P1[c("First.name", "Last.name")], sep = " "))
+
+library(dplyr)
+C1 <- dplyr::select(P1, FullName, Course1, Course2, Course3, Course4, Course5)
+
+library(tidyr)
+C_long <- tidyr::gather(C1, CourseNo., "Courses", 2:6)
+
+names(C_long) <- c("Names", "CourseNo.", "Courses")
+
+library(dplyr)
+C2 <- dplyr::select(C_long, Names, Courses)
+C2$Courses <- ifelse(C2$Courses == "", NA, C2$Courses)
+
+C3 <- na.omit(C2)
+
+Table1 <- table(C3$Names, C3$Courses)
+
+C5 <- as.data.frame.table(Table1)
+names(C5) <- c("from", "to", "count")
+C5$count <- ifelse(C5$count == "0", NA, C5$count)
+
+C6 <- na.omit(C5)
+
+V1 <- dplyr::select(C3, Courses)
+V1 <- unique(V1)
+V1 <- dplyr::arrange(V1, Courses)
+#this aggranges fields in alphabetical order
+V1$group <- "course"
+
+V2 <- dplyr::select(C3, Names)
+V2 <- unique(V2)
+V2$group <- "Student"
+
+names(V1) <- c("id",  "group")
+names(V2) <- c("id", "group")
+
+V <- dplyr::bind_rows(V1, V2)
+g <- graph.data.frame(C6, directed=TRUE, vertices=V)
+plot(g,layout=layout.fruchterman.reingold, vertex.label=NA, edge.arrow.size=0.3)
+
+
+```
