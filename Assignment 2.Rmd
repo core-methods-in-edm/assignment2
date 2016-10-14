@@ -120,27 +120,31 @@ H1$Last.name<-do.call(paste, c(H1[c("First.name", "Last.name")], sep = " "))
 H2<-dplyr::select(H1,Last.name,Course1,Course2,Course3,Course4,Course5)
 H5<- H2 %>% tidyr::gather(course,name,2:6)
 ```
-Gather command just dont't work on H4 whywhywhy
-#transpose the H2
-H3<-t(H2)
-#make the columns to be the name
-colnames(H3)<-H3[1, ]
-H4<-H3[-1, ]
-#gather
-H5<- H4 %>% tidyr::gather(course,name,1:28)
 
 Sort out the edge
 ```{r}
 H5<-dplyr::select(H5,Last.name,name)
 #why did it become a string of the characters
-#> H5$name <- ifelse(H5$name == "", NA, H5$name)
-> View(H5)
-> H5 <- na.omit(H5)
-> View(H5)
-
-H6<-ifelse(H5$name=="",NA,H5$name)
-H6nona<-na.omit(H6)
-EDGE2 <- dplyr::count(H5nona, Last.name, name)
+H5$name <- ifelse(H5$name == "", NA, H5$name)
+H6nona<-na.omit(H5)
 names(EDGE2) <- c("from", "to", "count")
+```
+
+VERTEX
+```{r}
+STU<-dplyr::select(H2, Last.name)
+STU$group <- "student"
+
+COURSE<-dplyr::select(H6nona,name)
+COURSE<-unique(COURSE)
+COURSE$group<-"course"
+names(STU)<-c("name","group")
+names(COURSE)<-("name" ,"group")
+VERTEX2 <- dplyr::bind_rows(STU, COURSE)
+```
+PLOT the most popular course
+```{r}
+g2 <- graph.data.frame(EDGE2, directed=TRUE, vertices=VERTEX2)
+plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,vertex.label=NA,edge.arrow.size=0.5)
 ```
 
