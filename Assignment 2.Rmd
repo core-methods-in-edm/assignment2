@@ -115,19 +115,21 @@ Play around with different graphs and then save your final version to the repo. 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
 ```{r}
+H1 <-read.csv("hudk4050-classes.csv", sep = ",", header = TRUE) 
 #combine the firstname and lastname
-H1$Last.name<-do.call(paste, c(H1[c("First.name", "Last.name")], sep = " "))
-H2<-dplyr::select(H1,Last.name,Course1,Course2,Course3,Course4,Course5)
+H2<- tidyr::unite_(H1, "Fullname", c("First.name", "Last.name"))
 H5<- H2 %>% tidyr::gather(course,name,2:6)
+names(H5)<-c("FULLNAME","COURSENUM","COURSE")
 ```
 
 Sort out the edge
 ```{r}
-H5<-dplyr::select(H5,Last.name,name)
-#why did it become a string of the characters
-H5$name <- ifelse(H5$name == "", NA, H5$name)
-H6nona<-na.omit(H5)
-names(EDGE2) <- c("from", "to", "count")
+H5<-dplyr::select(H5,FULLNAME,COURSE)
+
+H6nona<- dplyr::filter(H5, COURSE>=1)
+EDGE2 <- dplyr::count(H6nona,FULLNAME,COURSE)
+names(EDGE2)<- c("from", "to","count")
+
 ```
 
 VERTEX
@@ -139,7 +141,7 @@ COURSE<-dplyr::select(H6nona,name)
 COURSE<-unique(COURSE)
 COURSE$group<-"course"
 names(STU)<-c("name","group") 
-names(COURSE)<-("name","group")
+names(COURSE)<-c("name","group")
 VERTEX2 <- dplyr::bind_rows(STU, COURSE)
 ```
 PLOT the most popular course
@@ -147,4 +149,65 @@ PLOT the most popular course
 g2 <- graph.data.frame(EDGE2, directed=TRUE, vertices=VERTEX2)
 plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,edge.arrow.size=0.6)
 ```
+
+PLOT the most popular student
+```{r}
+T1<-dplyr::select(H6nona,FULLNAME,COURSE)
+T2<-dplyr::filter(T1,COURSE!="HUDK4050")
+T3<-table(T2)
+#FOLLOW THE REVERE
+STUDENT.NET<- T3 %*% t(T3)
+
+COURSE.NET <- t(T3) %*% (T3)
+diag(STUDENT.NET) <- NA
+diag(COURSE.NET ) <- NA
+```
+
+```{r}
+library(igraph)
+course.g <- graph.adjacency(COURSE.NET,mode="undirected", weighted=NULL, diag=FALSE)
+student.g <- graph.adjacency(STUDENT.NET,mode="undirected", weighted=NULL, diag=FALSE)
+la <- layout.fruchterman.reingold(student.g)
+e.wt <- get.edge.attribute(student.g, "weight")
+pdf(file="studentnet.pdf", width=20, height=20)
+plot(student.g, layout=la,vertex.size=15,edge.width=e.wt,vertex.label=V(student.g)$name)
+dev.off()
+```
+
+```{r}
+#betweeness
+btwn.stu <- betweenness(student.g)
+names(btwn.stu) <- V(student.g)$name
+ind <- order(-btwn.stu)
+btwn.stu[ind][1:10]
+```
+
+```{r}
+# Eigenvector
+cent.eig <- evcent(student.g)
+names(cent.eig$vector) <- V(student.g)$name
+
+ind <- order(-cent.eig$vector)
+cent.eig$vector[ind][1:10]
+```
+
+```{r}
+# Kleinberg authority
+cent.klein <- authority.score(student.g)
+names(cent.klein$vector) <- V(student.g)$name
+ind <- order(-cent.klein$vector)
+cent.klein$vector[ind][1:10]
+```
+
+
+```{r}
+pdf(file="student-network2.pdf", width=20, height=20,pointsize=5)
+la2 <- layout.fruchterman.reingold(student.g)
+plot(student.g, layout=la2, vertex.size=3,vertex.label=V(student.g)$name)
+dev.off()
+
+```
+
+#I only understand the code of revere to this far. Beyond this point ,I can't run it(it shows error for bonacich power). I hope its ok for this assignment...
+
 
