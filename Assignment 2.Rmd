@@ -107,5 +107,83 @@ vertex.size=
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
+```{r}
+H1<-c("A","B","C","D","E")
+H2<-c(9,19,8,12,8)
+barplot(H2,names.arg = H1,xlab = "Teacher",ylab = "Frequency",col = "blue",
++         main = "Frequency chart",border = "red")
+```
+
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+
+#Load Libraries
+
+> library(igraph)
+> library(dplyr)
+
+#Combine the names
+> Classes$Full.name<-do.call(paste, c(Classes[c("First.name", "Last.name")], sep = " "))
+
+#New Dataset With Full Name Instead of first & last
+> Classes2<-dplyr::select(Classes,Full.name,Course1,Course2,Course3,Course4,Course5)
+
+#Combine Course1-Course2_Course3-Course4-Course5 to make Course
+
+> Classes3<-Classes2%>%tidyr::gather(Number,Course, Course1:Course5)
+
+#Take Out Rows with no Courses
+
+> Classes4<-dplyr::filter(Classes3,Course!="")
+
+#Remove Number Variable from Dataset
+
+> Classes5<-Classes4
+> Classes5$Number<-NULL
+
+#Transforming Data -> Data Frame
+
+> Full.name<-c(Classes5$Full.name)
+> Course<-c(Classes5$Course)
+> Class.Data<-data.frame(Full.name,Course)
+> Class.Data<-xtabs(Col~Full.name+Course,cbind(Class.Data,Col=1))
+
+# 2 Matricies Student to Student (person.network), Course to Course ()
+
+> person.network <- Class.Data %*% t(Class.Data)
+> group.network <- t(Class.Data) %*% Class.Data
+> diag(person.network)<- NA
+> diag(group.network)<- NA
+> person.graph <- graph.adjacency(person.network,mode="undirected",weighted=NULL,diag=FALSE)
+> group.graph <- graph.adjacency(group.network, weighted=TRUE,mode="undirected",diag=FALSE)
+
+#Plot Groups
+
+> layout.group <- layout.fruchterman.reingold(group.graph)
+> edge.width.group <- get.edge.attribute(group.graph, "weight")
+> plot(group.graph, layout=layout.group, vertex.size=15,edge.width=edge.width.group,vertex.label=V(group.graph)$name)
+
+#Plot Person (People)
+
+layout.person <- layout.fruchterman.reingold(person.graph)
+> edge.width.person <- get.edge.attribute(person.graph, "weight")
+> plot(person.graph, layout=layout.person, vertex.size=15,edge.width=edge.width.person,vertex.label=V(person.graph)$name)
+
+#Betweeness Measure of Person (People)
+
+between.person<-betweenness(person.graph)
+> names(between.person) <- V(person.graph)$name
+> b.m<-order(-between.person)
+between.person[b.m][1:10]
+               
+#Centrality Measure
+
+> cent.bonpow<-bonpow(person.graph,exponent=1)
+> names(cent.bonpow)<-V(person.graph)$name
+> c.m<-order(cent.bonpow)
+> cent.bonpow[c.m][1:28]
+
+#Degree Measure
+
+> degree(person.graph, v = V(person.graph), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
