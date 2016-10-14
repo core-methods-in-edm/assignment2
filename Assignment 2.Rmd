@@ -145,6 +145,6 @@ VERTEX2 <- dplyr::bind_rows(STU, COURSE)
 PLOT the most popular course
 ```{r}
 g2 <- graph.data.frame(EDGE2, directed=TRUE, vertices=VERTEX2)
-plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,vertex.label=TRUE,edge.arrow.size=0.6)
+plot(g2,layout=layout.fruchterman.reingold,vertex.size=10,edge.arrow.size=0.6)
 ```
 
