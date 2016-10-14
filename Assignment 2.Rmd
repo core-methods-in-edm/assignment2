@@ -12,9 +12,18 @@ We will be using the "igraph" package to visualize the disciplinary relationship
 http://igraph.org/r/
 
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+## Download and install the package
+install.packages("igraph")
+
+## Load package
+library(igraph)
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
-
+```{r}
+D1 <- read.table("~/Desktop/HUDK class/Assignment Oct 12/discipline-data.csv", sep = ",", header = TRUE)
+```
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
@@ -85,11 +94,13 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+#plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+VERTEX$group <- as.factor(VERTEX$group)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$group)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$group, edge.width=EDGE$count)
 
 #Other attributes you may want to change are:
 
@@ -108,4 +119,167 @@ vertex.size=
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+#Open the dataset
+library(tidyr)
+library(dplyr)
+A1 <-read.csv("~/Desktop/HUDK class/Assignment Oct 12/hudk4050-classes.csv", sep = ",", header = TRUE) 
+# To unify the First and Last Name
+A2 <- tidyr::unite_(A1, "Fullname", c("First.name", "Last.name"))
+# Tranpose
+A3 <- tidyr::gather(A2, key = Fullname, value = Course)
+# Change the name since there are repicate
+names(A3) <- c("Fullname", "List", "Course")
+# Delete NA data
+A4 <- dplyr::filter(A3, Course>=1)
+# Create Count dataset
+A5 <- count(A4, Fullname, Course)
+#Rename 
+names(A5)<- c("Fullname", "Course","Count")
+# Create the spreadsheet similiar to the example
+Final <- spread(A5, key = Course, value = Count, fill = 0)
+Final$Fullname <- as.factor(Final$Fullname)
+library(igraph)
+write.csv(Final, file = "Final.csv",row.names = FALSE)
+data <- as.matrix(read.csv("~/Desktop/HUDK class/Assignment Oct 12/Final.csv",row.names=1))
+
+person.net <- data %*% t(data) #this is student data
+group.net <- t(data) %*% data #this is course data
+
+diag(group.net) <- NA # eliminate the diag
+diag(person.net) <- NA
+
+person.g <- graph.adjacency(person.net,mode="undirected",
+                            weighted=NULL, diag=FALSE)
+
+
+group.g <- graph.adjacency(group.net, weighted=TRUE,
+                           mode="undirected", diag=FALSE)
+
+la <- layout.fruchterman.reingold(group.g)
+e.wt <- get.edge.attribute(group.g, "weight")
+
+pdf(file="figures/group-view.pdf", width=10, height=10)
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
+     vertex.label=V(group.g)$name)
+dev.off()
+
+png(file="figures/group-view.png", width=1000, height=1000, res=150)
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt,
+     vertex.label=V(group.g)$name)
+dev.off()
+
+
+pdf(file="figures/revere-network.pdf", width=22, height=17,pointsize=8)
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=3,edge.width=0.1,
+     vertex.label=V(person.g)$name)
+dev.off()
+
+png(file="figures/revere-network.png", width=2200, height=1700, res=150)
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=3,edge.width=0.1,
+     vertex.label=V(person.g)$name)
+dev.off()
+
+
+data.t <- t(data)
+person2.net <- data %*% t(data)
+diag(person2.net) <- NA
+person2.g <- graph.adjacency(person2.net, mode="undirected", weighted=TRUE, diag=FALSE)
+la <- layout.fruchterman.reingold(person2.g)
+e.wt <- get.edge.attribute(person2.g, "weight")
+
+pdf(file="figures/person-weighted-view.pdf", width=20, height=20)
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt,
+     vertex.label=V(person2.g)$name)
+dev.off()
+
+png(file="figures/person-weighted-view.png", width=2000, height=2000, res=150)
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt,
+     vertex.label=V(person2.g)$name)
+dev.off()
+
+
+
+### Centrality
+
+## Betweenness
+btwn.person <- betweenness(person.g)
+names(btwn.person) <- V(person.g)$name
+ind <- order(-btwn.person)
+btwn.person[ind][1:10]
+
+## Because Joonyoung took the most class so she "is connected"" to many courses => has the highest value for betweeness
+
+## Eigenvector
+cent.eig <- evcent(person.g)
+names(cent.eig$vector) <- V(person.g)$name
+
+ind <- order(-cent.eig$vector)
+cent.eig$vector[ind][1:10]
+
+## Kleinberg authority
+cent.klein <- authority.score(person.g)
+names(cent.klein$vector) <- V(person.g)$name
+ind <- order(-cent.klein$vector)
+cent.klein$vector[ind][1:10]
+
+## David, Devan, Jie seems to have a lot of classes in common with everyone
+
+## Bonacich Power
+cent.bonpow <- bonpow(person.g, exponent=1)
+names(cent.bonpow) <-  V(person.g)$name
+ind <- order(cent.bonpow)
+cent.bonpow[ind][1:10]
+
+ind <- cent.bonpow < -1.35
+
+col.vec <- rep("")
+
+pdf(file="figures/revere-network-reduced.pdf", width=22, height=17,pointsize=8)
+person.g.copy <- person.g
+la <- layout.fruchterman.reingold(person.g.copy)
+plot(person.g.copy, layout=la, vertex.size=3,
+     vertex.label=V(person.g.copy)$name)
+dev.off()
+
+png(file="figures/revere-network-reduced.png", width=2200, height=1700, res=140)
+person.g.copy <- person.g
+la <- layout.fruchterman.reingold(person.g.copy)
+plot(person.g.copy, layout=la, vertex.size=3,
+     vertex.label=V(person.g.copy)$name)
+dev.off()
+
+
+png(file="figures/revere-test.png", width=2200, height=1700)
+com <- spinglass.community(person.g, spins=5)
+V(person.g)$color <- com$membership+1
+person.g <- set.graph.attribute(person.g, "layout", layout.fruchterman.reingold(person.g))
+plot(person.g)
+dev.off()
+
+png(file="figures/revere-test.png", width=2000, height=1000)
+lay <- layout.fruchterman.reingold(person.g)
+pr.id <- 200
+# Plot the eigevector and betweenness centrality
+par(mfrow=c(1,2))
+plot(bonpow(person.g, exponent=1), betweenness(person.g))
+
+e.rank <- rank(-evcent(person.g)$vector)
+b.rank <- rank(-betweenness(person.g))
+c.rank <- rank(-bonpow(person.g, exponent=1))
+s.top <- c.rank < 10 | b.rank < 10
+text(bonpow(person.g)[s.top], betweenness(person.g)[s.top], cex=0.6, pos=4, labels=V(person.g)$name[s.top])
+V(person.g)[pr.id]$color <- "yellow"
+E(person.g)$color="grey95"
+plot(person.g, layout=lay, vertex.size=2,
+     vertex.label.cex=0.6, vertex.label=V(person.g)$name)
+dev.off()
+
+
+```
 
