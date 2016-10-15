@@ -1,0 +1,81 @@
+---
+title: "hudk4050-classes"
+author: "Zhuqian (Karen) Zhou"
+date: "October 14, 2016"
+output: html_document
+---
+
+## Practice with data from our class
+
+Instruction: Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweenness centrality and dregree. **Who is the most central person in the network?**
+
+
+## Upload the File
+
+Firstly, I upload the data file "hudk4050-classes.csv" as a data frame called "C1". Each row represents a student's first and last name and courses he/she takes for this semester. Since all students in this table are from the roster of HUDK4050, we can see that everyone on the list takes HUDK4050 this fall.
+
+```{r}
+C1 <- read.table("~/Career/TC/Courses/Core Methods in EDM/assignment2/hudk4050-classes.csv", sep = ",", header = TRUE)
+```
+
+## Data Wrangling
+
+Secondly, I tidy up the original data by unifying the first and last name, transforming the data frame into the long version, and deleting null values. The clean long version of the orinial data is in the data fram called "C5".
+
+```{r}
+C2 <- tidyr::unite(C1, name, Last.name, First.name, sep = ", ", remove = TRUE)
+C3 <- tidyr::gather(C2, course.order, course, Course1, Course2, Course3, Course4, Course5, na.rm = TRUE, convert = FALSE)
+C4 <- dplyr::filter(C3, course > 0, course != "HUDK4050")
+C5 <- dplyr::select(C4, name, course)
+```
+
+## Social Network Analysis
+
+Thirdly, with the **student-course** data frame "C5" in hand, in order to create a **person-network**, I will take advantage of matrix multiplication to help me.
+
+At first, I spread "C5" to the wide version called "C7" in which each column represents a course and each row represents a student. Then, I turn the data frame "C7" into a matrix called "C8" which is the legal format to be operated in R. Finally, I multiply "C8" with "t(C8)" to create the **person-network** "C9" (or vice versus to create the class-network if you need.)
+
+```{r}
+C6 <- dplyr::count(C5, name, course)
+C7 <- tidyr::spread(C6, course, n)
+C8 <- subset(C7, select = -c(name))
+row.names(C8) <- C7$name
+C8[is.na(C8)] <- 0
+C8 <- as.matrix(C8)
+C9 <- C8 %*% t(C8)
+diag(C9) <- NA
+```
+
+## Plot
+
+Fourthly, I upload the "igraph" package to draw a graph for the person-network "C9" utilizing Function graph.adjacency() and plot().
+
+```{r Network of Students, echo=TRUE}
+library(igraph)
+C10 <- graph.adjacency(C9, mode="undirected", diag=FALSE)
+plot(C10, layout = layout.fruchterman.reingold, vertex.label=NA, vertex.size = 5, edge.width = get.edge.attribute(C10, "weight"))
+```
+
+## Centriality
+
+Lastly, I calculate degree and betweenness centrality respectively utilizing Function degree() and betweenness() and try to find out who is the most central person in the network by showing the first 10 students with the highest centrality.
+
+```{r}
+degree.student <- degree(C10,v=V(C10), mode = "all", loops = TRUE, normalized = FALSE)
+names(degree.student) <- V(C10)$name
+ind <- order(-degree.student)
+degree.student[ind][1:10]
+btwn.student <- betweenness(C10, v = V(C10), directed = FALSE, nobigint = TRUE, normalized = TRUE)
+names(btwn.student) <- V(C10)$name
+ind2 <- order(-btwn.student)
+btwn.student[ind2][1:10]
+```
+
+## Results
+
+Accrding to the **degree centrality** shown as above, David Cody, Jie Gao, and Devan Goto are the most central students with the highest degree, 18.
+
+However, my result for the **betweenness centrality** is very weird as above. Everyone's centrality is zero. I have no idea what is wrong here. Hope Professor can help me out.
+
+
+                         
