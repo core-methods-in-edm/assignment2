@@ -1,7 +1,7 @@
 ---
-title: "Assignment 6 - Social Network Analysis"
+title: "Assignment 2 - Social Network Analysis"
 author: "Charles Lang"
-date: "Oct 13, 2016"
+date: "Oct 16, 2016"
 output: html_document
 ---
 
@@ -13,7 +13,23 @@ http://igraph.org/r/
 
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+```{r}
+#Clears memory
+rm(list = ls())
+
+#Clear the console
+cat("\014")
+
+#install.packages("igraph")
+library("igraph")
+```
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+
+```{r}
+D1<-read.csv("discipline-data.csv")
+names(D1)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -73,7 +89,7 @@ Now we have both a Vertex and Edge list it is time to plot our graph!
 ```{r}
 #Load the igraph package
 
-library(igraph)
+#library(igraph)
 
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
@@ -94,13 +110,13 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 #Other attributes you may want to change are:
 
 #Arrow size
-edge.arrow.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size=0.5)
 
 #Remove the labels
-vertex.label=NA
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size=0.5,vertex.label=NA)
 
 #Vertex size
-vertex.size=
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size=0.5,vertex.label=NA,vertex.size=10)
   
 #And many others!
 ```
@@ -109,3 +125,149 @@ Play around with different graphs and then save your final version to the repo. 
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+#Load the data for HUDK-4050 class
+
+D4050<-read.csv("hudk4050-classes.csv")
+names(D4050)
+
+#We transform it to characters first so we don't have issues with the different levels (will transform them back to factors later)
+D4050$Course1<-as.character(D4050$Course1)
+D4050$Course2<-as.character(D4050$Course2)
+D4050$Course3<-as.character(D4050$Course3)
+D4050$Course4<-as.character(D4050$Course4)
+D4050$Course5<-as.character(D4050$Course5)
+
+#We will use the last names of the students as their IDs + their first letter of their name (I'll change my last name to my first last name only to make it more pretty):
+D4050$id<-as.character(D4050$Last.name)
+D4050$id[D4050$id=="Bennett Colomer"]<-"Bennett"
+D4050$id[D4050$Last.name=="Zhang" & D4050$First.name=="Jiaqing"]<-"Zhang_J"
+D4050$id[D4050$Last.name=="Zhang" & D4050$First.name=="Xiaoyue"]<-"Zhang_X"
+
+D4050$id<-as.factor(D4050$id)
+
+#Some people included the course HUDK4050 and others did not, so I'll add it to their course list if they didn't:
+for(i in 1:nrow(D4050)){
+  #Retrieve the courses for each students
+  courses=D4050[i,-c(1,2)]
+  #Find the course "HUDK4050" within their courses
+  aux=which(courses=="HUDK4050")
+  
+  #If they did not add HUDK4050, I'll add it in the first blank space they have
+  if(length(aux)==0){
+    D4050[i,which(courses=="")[1]+2]="HUDK4050"
+  }
+}
+
+#Now, we subset are dataframe using the variables we need.
+D4050_s<-dplyr::select(D4050,id,Course1,Course2,Course3,Course4,Course5)
+
+#We create the edges, that in this case will be whether people belong to the same class (and how many classes do they belong to together)
+D4050_r<-tidyr::gather(D4050_s,key=N_course,value=course,-id,factor_key=TRUE)
+names(D4050_r)<-c("id","N_course","course")
+
+#Drop the courses that are empty
+D4050_r<-D4050_r[D4050_r$course!="",]
+
+#Transform courses back to a factor
+D4050_r$course<-as.factor(D4050_r$course)
+
+#id_course<-as.data.frame(table(D4050_r$id,D4050_r$course))
+
+#Now we create a matrix of edges (undirected):
+#I'm sure that there is a more efficient way to do this, uut I cannot think of one right now.
+SN_mat<-matrix(0,nrow=length(unique(D4050_r$id)),ncol=length(unique(D4050_r$id)))
+
+for(i in 1:(length(unique(D4050$id))-1)){
+  for(j in (i+1):length(unique(D4050$id))){
+    aux=D4050_r[D4050_r$id==unique(D4050$id)[i] | D4050_r$id==unique(D4050$id)[j],]
+    SN_mat[i,j]=sum(dplyr::count(aux,course)[,2]-1)
+    
+    #SN_mat[j,i]=SN_mat[i,j]
+  }
+}
+
+#SN will now store the connections between students depending of the number of courses in which they are togheter
+SN<-as.data.frame(t(SN_mat))
+SN<-cbind(levels(D4050_r$id),SN)
+names(SN)<-c("id",levels(D4050_r$id))
+
+#Now we get a dataframe similar to EDGES (and we drop the node-to-same-node connections, and repeated connections)
+edge4050 <- tidyr::gather(SN,st2,count,-id)
+edge4050<-edge4050[edge4050$id!=edge4050$st2,]
+edge4050<-edge4050[edge4050$count!=0,]
+
+#Because this network is non-directional, we include both to-from combinations.
+names(edge4050) <- c("from", "to", "count")
+
+
+#Now, we wil create the vertex dataframe
+
+vertex4050<-levels(D4050_s$id)
+#Calculate the number of courses each student is taking
+n_courses<-rowSums(D4050_s[,c("Course1","Course2","Course3","Course4","Course5")]!="")
+
+vertex4050<-as.data.frame(cbind(vertex4050,n_courses))
+
+names(vertex4050)<-c("id","n_courses")
+
+vertex4050$id<-as.factor(vertex4050$id)
+
+```
+Finally, we can start *plotting!*
+
+```{r}
+
+g <- graph.data.frame(edge4050, directed=FALSE, vertices=vertex4050)
+
+plot(g,layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold,vertex.color=vertex4050$n_courses)
+
+#We will exclude the connection given by HUDK4050:
+
+edge4050_2<-edge4050
+edge4050_2$count<-edge4050$count-1
+edge4050_2<-edge4050_2[edge4050_2$count!=0,]
+
+g2 <- graph.data.frame(edge4050_2, directed=FALSE, vertices=vertex4050)
+
+colrs <- adjustcolor( c("gray50", "tomato", "gold", "yellowgreen","purple"), alpha=.6)
+
+
+#Graph showing the connections between the students (besides HUDK4050).
+
+plot(g2,layout=layout.fruchterman.reingold, vertex.color=colrs[vertex4050$n_courses],edge.width=edge4050_2$count,vertex.size=5,xlim=c(-0.8,0.8),ylim=c(-0.7,0.7),vertex.label.cex = 0.8,asp=0.35,margin=0.1)
+legend('bottomleft',legend=levels(vertex4050$n_courses),col=colrs,fill=colrs,bty="n",cex=0.5,horiz=F,title="N courses taken")
+
+```
+
+It is clear to see from the previous graph, that students that are taking more classes are more likely to be connected. Also, there is a clear cluster of students who are taking the same classes.
+
+Now, we will calculate the betweenness centrality and degree of the network:
+
+```{r}
+#"The vertex and edge betweenness are (roughly) defined by the number of geodesics (shortest paths) going through a vertex or an edge"
+estimate_betweenness(g2,directed=FALSE,cutoff=0,weights=edge4050_2$count)
+
+#The last graph did not consider that all the nodes were connected, so we use the firs graph which includes the connection from HUDK4050
+estimate_betweenness(g,directed=FALSE,cutoff=0,weights=edge4050$count)
+
+#We can also calculate the closeness of the network, where closeness is defined as: "Cloness centrality measures how many steps is required to access every other vertex from a given vertex."
+closeness(g,weights = edge4050$count, normalized = T)
+
+names(closeness(g,weights = edge4050$count, normalized = T))[closeness(g,weights = edge4050$count, normalized = T)==min(closeness(g,weights = edge4050$count, normalized = T))]
+
+#Here we can see that the people within the cluster, have the same value of closeness centrality.
+
+#Finally, the degree of the network:
+degree(g, loops = TRUE, normalized = TRUE)
+#For the first graph, the degree is 1, because all students are directly connected through HUDK4050.
+
+#Now, if we ignore the connection fot he HUDK4050 course:
+
+degree(g2, loops = TRUE, normalized = TRUE)
+
+names(degree(g2, loops = TRUE, normalized = TRUE))[degree(g2, loops = TRUE, normalized = TRUE)==max(degree(g2, loops = TRUE, normalized = TRUE))]
+
+#Again, the students with the max degrees are those who belong to the cluster.
+```
