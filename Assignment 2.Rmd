@@ -11,6 +11,7 @@ We will be using the "igraph" package to visualize the disciplinary relationship
 
 http://igraph.org/r/
 
+
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
@@ -18,7 +19,9 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1<-read.csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
+D2$stid <- as.factor(D2$stid)
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -30,14 +33,17 @@ First we will isolate the variables that are of interest: tid and stid
 ```{r}
 library(dplyr)
 
-D2 <- dplyr::select(D1, tid, stid)
+
+D1 <- read.csv("discipline-data.csv", header = TRUE, sep =",")
+
+D2 <- dplyr::select(discipline.data, tid, stid)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
-EDGE <- dplyr::count(D2, tid, stid)
+EDGE <- dplyr::count(tid, stid)
 
 names(EDGE) <- c("from", "to", "count")
 
@@ -49,12 +55,14 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 
 #First we will separate the teachers from our original data frame
 V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
 
 #Now repeat this process for the students
+
 V.STD <- dplyr::select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
@@ -64,16 +72,18 @@ names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
-VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+#V.STD$id=as.factor(V.STD$id)
 
-```
+VERTEX <- dplyr::bind_rows(V.TCH,V.STD)
 
-Now we have both a Vertex and Edge list it is time to plot our graph!
+
+#Now we have both a Vertex and Edge list it is time to plot our graph!
 
 ```{r}
 #Load the igraph package
 
 library(igraph)
+
 
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
@@ -109,3 +119,4 @@ Play around with different graphs and then save your final version to the repo. 
 
 Once you have done this you need to practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+EV1$name<-do.call(paste,c(EV1[c(First.name","Last.name")],sep=""))```
