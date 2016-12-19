@@ -1,10 +1,13 @@
 ---
-title: "Assignment 6 - Social Network Analysis"
-author: "Charles Lang"
+title: "Assignment 2 - Social Network Analysis"
+author: "Zhijun Huang"
 date: "Oct 13, 2016"
 output: html_document
 ---
-
+Set work directory
+```{r}
+setwd("~/Documents/EDM2016/assignment2")
+```
 In Assignment 2 we will be looking at some disciplinary data from a middle school. The file "discipline-data.csv" shows which teacher sent which student to the principal during the semester.
 
 We will be using the "igraph" package to visualize the disciplinary relationships between teachers and students as a network. You can read more about igraph here:
@@ -40,9 +43,10 @@ D2 <- dplyr::select(D1, tid, stid)
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
-
+#Creating a table of how many times teachers send a student to the principle
 EDGE <- dplyr::count(D2, tid, stid)
 
+#Naming edges to indicate the direction
 names(EDGE) <- c("from", "to", "count")
 
 ```
@@ -108,7 +112,7 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 #Vertex size
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count,edge.arrow.size=0.3,vertex.label=NA,vertex.size=20)
   
-#And many others!
+#And many others!(Changing the color, shape, and size of vertices according to variables)
 V(g)$color=V(g)$topic
 V(g)$color=gsub("art","aquamarine",V(g)$color)
 V(g)$color=gsub("biology","grey94",V(g)$color)
@@ -116,14 +120,53 @@ V(g)$color=gsub("english","pink",V(g)$color)
 V(g)$color=gsub("math","lightgoldenrod1",V(g)$color)
 V(g)$shape <- ifelse(VERTEX$group == "student", "circle", "square")
 V(g)$size <- ifelse(VERTEX$group == "student", 20, 15)
-plot(g,layout=layout.fruchterman.reingold, vertex.color=V(g)$color, edge.width=EDGE$count,edge.lty=6,edge.arrow.size=0.3, vertex.size=V(g)$size, vertex.label.color="grey", vertex.frame.color=VERTEX$gender,vertex.shape=V(g)$shape, frame=F, main = "Network Plot of Teachers and Students", margin = 0.01)
+V(g)$width <- .1
+##Network plot 
+#[Question]How to change the vertex.width? Refer to http://lists.gnu.org/archive/html/igraph-help/2009-09/msg00019.html
+#[Try!]Will revisit this later.
+
+#Define a function
+myvertex <- function(coords, v=NULL, params) {
+  vertex.color <- params("vertex", "color")
+  if (length(vertex.color) != 1 && !is.null(v)) {
+    vertex.color <- vertex.color[v]
+  }
+  vertex.size  <- 1/200 * params("vertex", "size")
+  if (length(vertex.size) != 1 && !is.null(v)) {
+    vertex.size <- vertex.size[v]
+  }
+  vertex.frame.color <- params("vertex", "frame.color")
+  if (length(vertex.frame.color) != 1 && !is.null(v)) {
+   vertex.frame.color <- vertex.frame.color[v]
+  }
+  vertex.frame.width <- params("vertex", "frame.width")
+  if (length(vertex.frame.width) != 1 && !is.null(v)) {
+    vertex.frame.width <- vertex.frame.width[v]
+  }
+
+  mapply(coords[,1], coords[,2], vertex.color, vertex.frame.color,
+     vertex.size, vertex.frame.width,
+     FUN=function(x, y, bg, fg, size, lwd) {
+       symbols(x=x, y=y, bg=bg, fg=fg, lwd=lwd,
+               circles=size, add=TRUE, inches=FALSE)
+     })
+}
+
+add.vertex.shape("fvertex", clip=igraph.shape.noclip,
+             plot=myvertex, parameters=list(vertex.frame.color=1,
+                                            vertex.frame.width=10))
+
+#Plot the graph
+plot(g,layout=layout.fruchterman.reingold, 
+     vertex.color=V(g)$color, edge.width=EDGE$count,edge.lty=6,edge.arrow.size=0.3, 
+     vertex.size=V(g)$size, vertex.label.color="grey", vertex.shape=V(g)$shape,
+     vertex.frame.color=VERTEX$gender, vertex.frame.width=V(g)$width, 
+     frame=F, main = "Network Plot of Teachers and Students", margin = 0.01)
 
 legend_color <- c("aquamarine","grey94","pink","lightgoldenrod1")
-legend(x=1.1, y=1, c("art","biology","english","math"), pch=21,col= "white", pt.bg = legend_color, pt.cex=2, cex=.8, bty="n", ncol=1)
-
+legend(x=1.1, y=1, c("Art","Biology","English","Math"), pch=21,col= "white", pt.bg = legend_color, pt.cex=2, cex=.8, bty="n", ncol=1)
 legend(x=1.1, y=0.1, c("F","M"), pch=21,col= c("orange","royalblue"), pt.cex=2,cex=.8, bty="n", ncol=1)
-
-#legend(x=1.5, y=0.1, c("Teacher","Student"), pch=21,col = "black", pt.cex=2,cex=.8, bty="n", ncol=1)
+legend(x=1.1, y=-0.5, c("Teacher","Student"), pch=c(0,1), col = "black", pt.cex=2,cex=.8, bty="n", ncol=1)
 ```
 
 Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
@@ -160,13 +203,13 @@ group.g <- graph.adjacency(group.net, weighted=TRUE,mode="undirected", diag=FALS
 #plot person
 la <- layout.fruchterman.reingold(person.g)
 e.wt <- get.edge.attribute(person.g, "weight")
-plot(person.g, layout=la, vertex.size=10,edge.width=0.5, vertex.label=V(person.g)$name)
+plot(person.g, layout=la, vertex.size=10,edge.width=0.5, vertex.label=V(person.g)$name, main = "Person Network")
 
 
 #plot group
 la <- layout.fruchterman.reingold(group.g)
 e.wt <- get.edge.attribute(group.g, "weight")
-plot(group.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(group.g)$name)
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(group.g)$name, main = "Group Network")
 
 #plot person (weighted)
 data.t <- t(data)
@@ -175,13 +218,14 @@ diag(person2.net) <- NA
 person2.g <- graph.adjacency(person2.net, mode="undirected", weighted=TRUE, diag=FALSE)
 la <- layout.fruchterman.reingold(person2.g)
 e.wt <- get.edge.attribute(person2.g, "weight")
-plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(person2.g)$name)
+plot(person2.g, layout=la, vertex.size=2,edge.width=e.wt, vertex.label=NULL, main = "Weighted Person Network")
 
 #betweeness
 btwn.person <- betweenness(person.g)
 names(btwn.person) <- V(person.g)$name
 ind <- order(-btwn.person)
 btwn.person[ind][1:28]
+#Joonyoung Park = 25
 
 #centrality (Bonacich Power Centrality Scores)
 cent.bonpow <- bonpow(person.g, exponent=1)
@@ -192,10 +236,59 @@ cent.bonpow[ind][1:28]
 #degree
 degree(person.g, v = V(person.g), mode = c("all", "out", "in", "total"), loops = TRUE, normalized = FALSE)
 ```
-#Failed Method 1
-#classes <- classes_long %>% spread(Full.name, List)
-#convert to binery
-#classes[is.na(classes)] <- 0
-#classes[,-1] <- apply(classes[,-1], c(1,2), function(x) ifelse(x != 0, 1, x))
-#classes[,-1] <- sapply(classes[,-1 ], as.numeric)
-#data <- as.matrix(classes)
+
+Now we repeat the analysis by excluding the course HUDK4050: Please create a **person-network** with the data set hudk4050-classes.csv. Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?** 
+
+```{r}
+#delete rows with HUDK4050
+classes_long <- classes_long[classes_long$Courses != "HUDK4050", ]
+#select full.name and courses
+classes <- classes_long %>% select(Full.name, Courses)
+#convert to workable form
+data <- table(classes)
+#creating matrices of students and courses
+person.net <- data %*% t(data)
+group.net <- t(data) %*% data
+diag(person.net) <- NA
+diag(group.net) <- NA
+
+person.g <- graph.adjacency(person.net,mode="undirected", weighted=NULL, diag=FALSE)
+
+group.g <- graph.adjacency(group.net, weighted=TRUE,mode="undirected", diag=FALSE)
+
+#plot person
+la <- layout.fruchterman.reingold(person.g)
+e.wt <- get.edge.attribute(person.g, "weight")
+plot(person.g, layout=la, vertex.size=10,edge.width=0.5, vertex.label=V(person.g)$name, main = "Person Network (without HUDK4050)")
+
+
+#plot group
+la <- layout.fruchterman.reingold(group.g)
+e.wt <- get.edge.attribute(group.g, "weight")
+plot(group.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(group.g)$name, main = "Group Network (without HUDK4050)")
+
+#plot person (weighted)
+data.t <- t(data)
+person2.net <- data %*% t(data)
+diag(person2.net) <- NA
+person2.g <- graph.adjacency(person2.net, mode="undirected", weighted=TRUE, diag=FALSE)
+la <- layout.fruchterman.reingold(person2.g)
+e.wt <- get.edge.attribute(person2.g, "weight")
+plot(person2.g, layout=la, vertex.size=15,edge.width=e.wt, vertex.label=V(person2.g)$name, main = "Weighted Person Network (without HUDK4050)")
+
+#betweeness
+btwn.person <- betweenness(person.g)
+names(btwn.person) <- V(person.g)$name
+ind <- order(-btwn.person)
+btwn.person[ind][1:28]
+#Everyone is now zero or NA.[Why?]
+
+#centrality (Bonacich Power Centrality Scores)
+cent.bonpow <- bonpow(person.g, exponent=1)
+names(cent.bonpow) <-  V(person.g)$name
+ind <- order(cent.bonpow)
+cent.bonpow[ind][1:28]
+
+#degree
+degree(person.g, v = V(person.g), mode = c("all", "out", "in", "total"), loops = TRUE, normalized = FALSE)
+```
