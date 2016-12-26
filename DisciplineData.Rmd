@@ -1,0 +1,90 @@
+---
+Title: Assignment2 "Social Networks"
+---
+  
+```{r include = FALSE}
+install.packages("igraph")
+```
+
+
+```{r}
+
+# I need to convert stid from an integar to an factor
+
+library(igraph)
+
+D1 <- read.csv("discipline-data.csv")
+read.csv("discipline-data.csv")
+D1$stid <- as.factor(D1$stid)
+```
+
+
+
+```{r}
+# Convert data list into edges made up of the relationships between teachers and students
+
+# We need to collapse the number of times a single student is sent to the principle by the same teacher.
+
+library(dplyr)
+D2 <- dplyr::select(D1, tid, stid)
+
+EDGE <- dplyr::count(D2, tid, stid)
+
+names(EDGE) <- c("from", "to", "count")
+```
+
+
+```{r}
+# We'll need to make a vertex list of teachers & students and their characteristics
+
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+```
+
+```{r}
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. 
+
+### Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+#Other attributes you may want to change are:
+
+#Arrow size
+edge.arrow.size= 50
+
+#Remove the labels
+vertex.label=NA
+
+#Vertex size
+vertex.size= 30
+
+#And many others!
