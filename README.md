@@ -5,5 +5,6 @@ Please fork and clone this repo. The instructions to Assignment 2 are in the Ass
 
 Good luck!
 
-
+Analytics is fun!
 Enjoy GitHub!
+
