@@ -3,7 +3,17 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+```{r}
+install.packages("igraph")
+library(igraph)
+```
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+
+```{r}
+D1 <- read.csv("C:/Users/Chen/Documents/CUTC/courses/2017 Fall_Core Methods of Educational Data Mining/1017/Assignment2_CZ/discipline-data.csv")
+#View(D1)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -75,20 +85,96 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,
+     layout=layout.fruchterman.reingold, 
+     vertex.color=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+``` {r}
+library(tidyr)
+
+STU.temp<-spread(EDGE, key=from, value=count)
+STU.temp[is.na(STU.temp)]<-0
+STU.temp$E<-as.numeric(STU.temp$E)
+STU.temp$total<-rowSums(STU.temp[,c("A","B","C","D","E")])
+
+TCH.temp<-spread(EDGE,key=to, value=count)
+TCH.temp[is.na(TCH.temp)]<-0
+TCH.temp$total<-rowSums(TCH.temp[,2:ncol(TCH.temp)])
+
+V.STD<-arrange(V.STD,id)
+V.TCH<-arrange(V.TCH,id)
+
+VERTEX <- dplyr::bind_rows(V.STD,V.TCH)
+
+total<-as.data.frame(c(STU.temp$total,TCH.temp$total))
+
+VERTEX <- dplyr::bind_cols(VERTEX,total)
+
+names(VERTEX) <- c("id", "gender", "topic", "group","total")
+
+VERTEX$group<-as.factor(VERTEX$group)
+plot(g,
+     layout=layout.fruchterman.reingold,
+     vertex.color=VERTEX$group,
+     vertex.size=VERTEX$total
+   )
+```
+
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+D3 <- read.csv("C:/Users/Chen/Documents/CUTC/courses/2017 Fall_Core Methods of Educational Data Mining/1017/Assignment2_CZ/hudk4050-classes.csv")
+
+View(D3)
+
+PC.name <- tidyr::unite(D3, col=name, First.name,Last.name,sep=" ")
+pc<-tidyr::gather(PC.name,key=name,value=course)
+pc<-pc[,-2]
+pc$course[pc$course==""]<-NA
+pc.clean<-pc[-which(is.na(pc$course)),]
+pc.clean$attend<-1
+PC <- tidyr::spread(pc.clean,key=name,value=attend)
+###convert first column to row names
+rownames(PC)<-PC$course
+PC<-PC[,-1]
+PC<-data.matrix(PC)
+PC[is.na(PC)]<-0
+View(PC)
+
+PC.t<-t(PC)
+View(PC.t)
+
+PP<-PC.t%*%PC
+diag(PP)<-NA
+View(PP)
+
+#Draw graph
+g3<-graph_from_adjacency_matrix(PP)
+plot(g3,
+     layout=layout.auto,
+     edge.arrow.size=.4,
+     vertex.size=7)
+
+###Betweeness centrality
+#If equal weight, number of geodesics passing through a vertex. 
+betweenness(g3, directed=FALSE)
+
+###Degree
+#Count of edges attached to it
+degree(g3)
+```
 
