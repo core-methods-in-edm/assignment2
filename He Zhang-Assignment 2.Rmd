@@ -1,0 +1,204 @@
+---
+title: "He Zhang-Assignment 2"
+author: "He Zhang"
+date: "10/19/2017"
+output: html_document
+---
+
+#Part 1
+#install igraph package
+```{r}
+# Download and install the package
+install.packages("igraph")
+
+# Load package
+library(igraph)
+ 
+```
+
+#upload data file "discipline-data.csv" as a data frame called "D1"
+```{r}
+D1<-read.csv("~/Desktop/He Zhang-Assignment 2/discipline-data.csv", header=T)
+D1
+```
+
+#change the format of student id variable from number to factor
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+#Isolate the variables that are of interest: tid and stid
+```{r}
+library(dplyr)
+D2 <- dplyr::select(D1, tid, stid)
+```
+
+#frequency of a teacher-student pair
+```{r}
+EDGE <- dplyr::count(D2, tid, stid)
+names(EDGE) <- c("from", "to", "count")
+```
+
+```{r}
+
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+
+```
+
+```{r}
+#Load the igraph package
+
+library(igraph)
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+```
+
+#Part 2
+```{r}
+library (dplyr)
+#First we will separate the teachers from our original data frame
+V.TCH2 <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Add a variable that describes that they are teachers
+V.TCH2$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD2 <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD2$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH2) <- c("id", "gender", "topic", "group")
+names(V.STD2) <- c("id", "gender", "topic", "group")
+
+#Add frequencies to V.TCH2 and V.STD2
+library(data.table)
+dt.STD2 = data.table(V.STD2)
+dt.STD2[,'freq-id':=.N, by=id]
+dt.TCH2 = data.table(V.TCH2)
+dt.TCH2[,'freq-id':=.N, by=id]
+
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.STD2<-unique(as.data.frame(dt.STD2))
+V.TCH2<-unique(as.data.frame(dt.TCH2))
+
+#Bind the two data frames together
+VERTEX2<-dplyr::bind_rows(V.TCH2, V.STD2)
+
+#Load the igraph package
+library(igraph)
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX2.
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX2)
+
+#Set up color and size of the vertices
+V(g2)$color<-ifelse(VERTEX2$group=="student", "lightblue", "orange")
+
+#Plot
+plot(g2, layout = layout.fruchterman.reingold,
+       vertex.size = VERTEX2$`freq-id`,
+       vertex.frame.color= NA,
+       vertex.label.color = "black",
+       vertex.label.family = "sans",
+       edge.width=EDGE$count,  
+       edge.color="gray")
+```
+
+
+#Part 3
+```{r}
+library(dplyr)
+library(tidyr)
+D3 <- read.csv("~/Desktop/He Zhang-Assignment 2/hudk4050-classes.csv", header=T)
+
+D3$Name<-paste(D3$First.name, D3$Last.name)
+D3["First.name"]=NULL
+D3["Last.name"]=NULL
+D3<-D3%>%
+  select(Name, everything())
+
+D3<-tidyr::gather(D3, "n", "course", 2:6)
+D3$n<-NULL
+
+D3$value<-1
+D3 <- dplyr::filter(D3, course > 0, course != "HUDK4050")
+
+D4<-unique(D3)
+
+D4 <- tidyr::spread(D4, key="course",value="value", fill = NA, convert = FALSE, drop = TRUE)
+
+D4<-D4[c(-2)]
+row.names(D4)<-D4$Name
+D4$Name <- NULL
+
+D4[is.na(D4)]<-0
+
+#person-class matrix
+D4.matrix<-as.matrix(D4)
+D4.matrix
+
+#Person-Person matrix
+D4.matrix2<-t(D4.matrix)
+
+D4.matrix3 <- D4.matrix %*% D4.matrix2
+diag(D4.matrix3) <- NA
+
+#plot a matrix using igraph
+library(igraph)
+g3<-graph.adjacency(D4.matrix3, weighted=T,mode="undirected")
+g3<-simplify(g3, remove.multiple = TRUE, remove.loops = TRUE)
+
+set.seed(3952)
+
+V(g3)$label.color <- rgb(0, 0, .2, .8)
+V(g3)$frame.color <- NA
+egam <- (log(E(g3)$weight)+.4) / max(log(E(g3)$weight)+.4)
+E(g3)$color <- rgb(.5, .5, 0, egam)
+layout1 <- layout.fruchterman.reingold(g3)
+plot(g3, layout=layout1)
+
+plot(g3, layout=layout.kamada.kawai)
+```
+
+#Part3-2 Lauren Romine, Joshua Coleman, Robert Jackson, Zhuqian Zhou and Jonathan Stelman are the most central persons in this network.
+```{r}
+betweenness(g3, v = V(g3), directed = TRUE, weights = NULL,
+  nobigint = TRUE, normalized = FALSE)
+
+degree(g3, v = V(g3), mode = c("all", "out", "in", "total"),
+  loops = TRUE, normalized = FALSE)
+```
+
+
+
+
