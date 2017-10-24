@@ -8,6 +8,18 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1
+```
+
+
+
+
+```{r}
+D1<- as.data.frame(discipline_data)
+```
+
+
+```{r}
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -76,6 +88,7 @@ plot(g,layout=layout.fruchterman.reingold)
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout = layout.fruchterman.reingold,vertex.color = ifelse(VERTEX$gender=='female', 'violet', 'turquoise'))
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
@@ -86,9 +99,94 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+
+```
+
+```{r}
+D3<-aggregate(count~from, data = EDGE, sum)
+```
+```{r}
+D3
+```
+```{r}
+D4<- aggregate(count~to, data = EDGE, sum)
+```
+```{r}
+D4
+```
+```{r}
+colnames(D3)[colnames(D3) == 'from'] <- 'id'
+```
+
+```{r}
+D3.5<-left_join(D3, V.TCH, by = "id")
+D3.5
+```
+```{r}
+colnames(D4)[colnames(D4) == 'to'] <- 'id'
+```
+
+```{r}
+D4.5<-left_join(D4, V.STD, by = "id")
+D4.5
+```
+```{r}
+D5<- dplyr::bind_rows(D3.5, D4.5)
+D5
+```
+```{r}
+h<- graph.data.frame(EDGE, directed=TRUE, vertices=D5)
+```
+
+```{r}
+plot(h,layout=layout.fruchterman.reingold, vertex.size=D5$count)
+```
+
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+N1<- hudk4050_classes
+N1
+```
+
+```{r}
+N2<-tidyr::gather(N1, key=course, value = "section", 3:7)
+N2
+```
+
+```{r}
+N3 <- subset(N2, select = -c(2,3))
+N3$value <- 1
+N3
+```
+
+```{r}
+N3<-unique(N3)
+N4<-tidyr::spread(N3,2,value)
+N4
+```
+
+```{r}
+N4[is.na(N4)]<-0
+N4
+```
+
+```{r}
+N4 <- N4[-c(39)]
+```
+
+```{r}
+colnames(N4)[colnames(N4) == 'First name'] <- 'First_name'
+```
+
+```{r}
+row.names(N4) <- N4$First_name
+```
+
 
