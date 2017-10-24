@@ -120,12 +120,17 @@ row.names(D5)<-D3$student
 M1<-as.matrix(D5)
 M2<-t(D5)
 M3<-M1 %*% M2
+M4<-M2 %*% M1
 diag(M3)<-0
+diag(M4)<-0
 ```
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 ```{r}
+library(igraph)
 g <- graph.adjacency(t(M3), mode="directed")
-plot(g)
+plot(g,vertex.size=3,edge.width=0.005)
+k <- graph.adjacency(t(M4), mode="directed")
+plot(k)
 ```
 
