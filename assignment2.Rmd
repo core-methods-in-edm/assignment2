@@ -1,0 +1,168 @@
+---
+title: "Assignment"
+author: "yq2205"
+date: "10/17/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Start by installing the "igraph" package
+```{r}
+install.packages("igraph")
+```
+
+#upload the data file "discipline-data.csv" as a data frame called "D1"
+```{r}
+D1<-read.csv("discipline-data.csv")
+```
+
+#change the data type of the student id variable
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+#convert our data into an edge list
+```{r}
+install.packages("dplyr")
+library(dplyr)
+D2 <- dplyr::select(D1, tid, stid)
+```
+
+#collapse these into a single row, with a variable that shows how many times a teacher-student pair appears
+```{r}
+EDGE <- dplyr::count(D2, tid, stid)
+names(EDGE) <- c("from", "to", "count")
+```
+
+#make the vertex list, a list of all the teachers and students and their characteristics in our network.
+
+
+```{r}
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+```
+
+#Load the igraph package
+```{r}
+library(igraph)
+```
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+```{r}
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+```
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+```{r}
+plot(g,layout=layout.fruchterman.reingold)
+```
+
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+```{r}
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+```
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+```{r}
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+```
+# Part2 In Part II your task is to look up in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+#count the number of disciplinary actions students have recieved and teachers have given out
+```{r}
+
+T1<-dplyr::select(D1, tid)
+T1<-as.data.frame(table(T1))
+S1<-dplyr::select(D1, stid)
+S1<-as.data.frame(table(S1))
+
+```
+```{r}
+names(T1)<-c("id","frequency" )
+names(S1)<-c("id","frequency" )
+
+H1<-dplyr::bind_rows(S1, T1)
+H1$id <- as.factor(H1$id)
+H1$frequency <- as.integer(H1$frequency)
+```
+
+#use the number as vertex
+```{r}
+
+
+library(igraph)
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+plot(g2,layout=layout.fruchterman.reingold,edge.width=EDGE$count,vertex.size=as.matrix(H1$frequency))
+
+
+```
+
+
+
+
+#Part 3
+#Please create a person-network with the data set hudk4050-classes.csv. 
+```{r}
+CLASS<-read.csv("hudk4050-classes.csv")
+```
+#merge last name and first name
+```{r}
+CLASS<- tidyr::unite_(CLASS, "Fullname", c("First.name", "Last.name"))
+F1<- CLASS %>% tidyr::gather(course,name,2:6)
+names(F1)<-c("FULLNAME","COURSENUM","COURSE")
+```
+```{r}
+F2<-dplyr::select(F1, FULLNAME, COURSE)
+F2<-dplyr::filter(F2, COURSE>1)
+M1<-dplyr::count(F2, FULLNAME, COURSE)
+names(M1)<- c("student", "courses","registered")
+
+```
+```{r}
+library(tidyr)
+M2<-unique(M1)
+M2<-tidyr::spread(M2,courses,registered)
+row.names(M2)<-M2$student
+M2$student <- NULL
+M2[is.na(M2)]<-0
+M2<-as.matrix(M2)
+M3<-M2 %*% t(M2)
+diag(M3) <- NA
+
+
+```
+
+
+#also look up how to generate the following network metrics: betweeness centrality and dregree. Who is the most central person in the network?
+```{r}
+library(igraph)
+g2 <- graph.adjacency(M3, mode = "upper",weighted = T, diag=FALSE)
+la <- layout.fruchterman.reingold(g2)
+V(g2)$label.cex <- 2.2 * V(g2)$degree / max(V(g2)$degree)+ .2
+plot(g2,layout=layout.fruchterman.reingold,vertex.size=get.edge.attribute(g2,"weight"),edge.arrow.size=4.0,vertex.label.cex=0.5)
+plot(g2, layout=la,vertex.size=15,edge.width=get.edge.attribute(g2,"weight"),vertex.label=V(g2)$name)
+dev.off()
+```
+
+
+
+
