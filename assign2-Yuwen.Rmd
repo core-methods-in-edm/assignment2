@@ -1,0 +1,131 @@
+```{r}
+D1 <- read.csv("~/Documents/RStudio/assignment 2/discipline-data.csv", header = TRUE)
+```
+
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+```{r}
+library(dplyr)
+
+D2 <- dplyr::select(D1, tid, stid)
+```
+
+```{r}
+EDGE <- dplyr::count(D2, tid, stid)
+```
+
+```{r}
+names(EDGE) <- c("from", "to", "count")
+```
+
+```{r}
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+```
+
+```{r}
+library(igraph)
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+```
+
+#part 2
+#In Part II your task is to look up in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+E1 <- tidyr::spread(EDGE, from, count)
+E1[is.na(E1)] <- 0
+S1 <- data.frame(rowSums(E1[2:6]))
+T1 <- data.frame(colSums(E1[2:6]))
+names(T1) <- c("size")
+Student <- cbind(E1$to, S1)
+names(Student) <- c("id","size")
+Teacher <- tibble::rownames_to_column(T1, "id")
+ b<-bind_rows(Teacher,Student)
+ VERTEX<-left_join(VERTEX,b,by="id")
+ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+```
+
+
+#part 3
+### Part III
+
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+hudk4050 <- read.csv("~/Documents/RStudio/assignment 2/HUDK4050_2017_SNA_classes.csv", head = TRUE)
+D1 <- select(hudk4050, 1,4:9)
+
+#Reshape data to create a "course" variable (you will get a warning because there are missing cells)
+D2 <- tidyr::gather(D1, course.label, course, `Class.1`, `Class.2`, `Class.3`, `Class.4`, `Class.5`,`Class.6`, na.rm = TRUE, convert = FALSE)
+
+#Remove the "course.label" variable
+D2 <- dplyr::select(D2, First.Name, course)
+
+#Remove rows indicating HUDK4050 because all students are in this course and it will overwhelm the graph
+D2 <- dplyr::filter(D2, course > 0, course != "HUDK 4050", course != "HUDK4050")
+
+#Add a variable to be used to count the courses
+D2$Count <- 1
+
+#Reshape the data to create a person x class matrix
+D3 <- tidyr::spread(D2, First.Name, Count)
+
+
+#This was a bit of a trick, for the matrix command to work the row names needed to changed from an indice (1,2,3,etc) to the student names 
+row.names(D3) <- D3$Name
+D3$Name <- NULL
+
+
+D3 <- ifelse(is.na(D3), 0, 1)
+
+#Convert the data from data frame format to matrix format so it can be transposed
+D4 <- as.matrix(D3)
+
+#Transpose matrix to produce a person x person matrix
+D5 <- D4 %*% t(D4)
+diag(D5) <- NA
+```
+
+```{r}
+g <- graph.adjacency(D5,mode="undirected")
+
+plot(g,layout=layout.fruchterman.reingold, vertex.size=3)
+```
+
+```{r}
+degree(g)
+betweenness(g)
+```
+
