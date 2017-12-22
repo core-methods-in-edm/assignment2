@@ -1,0 +1,107 @@
+---
+title: "Assignment2"
+author: "YI SHEN"
+date: "December 21, 2017"
+output: html_document
+---
+```{r}
+D1 <- read.csv("~/Documents/RStudio/assignment 2/discipline-data.csv", 
+               header = TRUE)
+D1$stid <- as.factor(D1$stid)
+```
+
+```{r}
+library(dplyr)
+D2 <- dplyr::select(D1,tid,stid)
+EDGE <- dplyr::count(D2,tid,stid)
+names(EDGE) <- c<("from","to","count")
+
+```
+
+```{r}
+V.TCH <- dplyr::select(D1,tid,t.gender,t.expertise)
+V.TCH <-unique(V.TCH)
+V.TCH$GROUP <- "teachers"
+V.STD <- dplry::select(D1,stid,s.gender,s.major)
+V.STD <- unique(V.STD)
+V.STD$GROUP <- "student"
+
+```
+
+```{r}
+names(V.TCH) <- c("id","gender","topic","group")
+names(V.STD) <- C("id","gender","topic","group")
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+
+```
+
+```{r}
+libraary(igraph)
+g <- graph.data.frame(EDGE, directed = TRUE, vertices = VERTEX)
+plot(g, layout=layout.fruchterman.reingold)
+plot(g,layout-layout.frunchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.frunchterman.reingold, vertex.color=VERTEX$gender, edge.width= EDGE$count)
+
+```
+
+```{r}
+Part2
+library(tidyr)
+STU.temp <- spread(EDGE, key=from, value=count)
+STU.temp[is.na(STU.temp)]<-0
+STU.temp$E<-as.numeric(Stu.temp$E)
+STU.temp$total<-rowSums(Stu.temp[c("1","2","3","4","5")])
+TCH.temp<-spread(EDGE,key=to,value=count)
+TCH.temp[is.na(TCH.temp)]<- 0
+TCH.temp$total<-rowSums(TCH.temp[,2:ncol(TCH.temp)])
+V.STD<-arrange(V.STD,id)
+V.TCH<-arrange(V.TCH,id)
+VERTEX <-dplyr::bind_rows(V.STD,V.TCH)
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+```{r}
+#Part 2
+T1 <- dplyr::select(D1,tid)
+T1 <- as.data.frame(table(T1))
+S1 <- dplyr::select(D1,stid)
+S1 <- as.data.frame(table(S1))
+```
+
+```{r}
+names(T1)<- c("id","frequency")
+names(S1)<- c("id","frequency")
+H1<-dplyr::bind_rows(S1,T1)
+H1<-id <- as.factor(H1$id)
+H1$frequency <- as.integer(H1$frequency)
+```
+
+```{r}
+library(igragh)
+g <-graph.data.frame(EDGE,directed=TRUE, vertices=Vertex)
+plot(g2,layout=layout.fruchterman.reingold, edge.width-EDGE$count,vertex.size-as.matrix(H1$frequency))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
