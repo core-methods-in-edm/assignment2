@@ -1,0 +1,142 @@
+---
+title: "Assignment 2 Yigu Liang"
+author: "yigu liang"
+date: "2017/12/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+```{r}
+install.packages("igraph")
+library(igraph)
+```
+library(igraph)
+```{r}
+library(igraph)
+```
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+```{r}
+ibrary(tidyr)
+```
+```{r}
+D2 <- dplyr::select(D1, tid, stid)
+
+```{r}
+EDGE <- dplyr::count(D2, tid, stid)
+```
+
+```{r}
+names(EDGE) <- c("from", "to", "count")
+```
+
+```{r}
+library(igraph)
+```
+
+```{r}
+student<-dplyr::group_by(EDGE[,c(2,3)], to)
+```{r}
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+```
+
+```{r}
+V.TCH <- unique(V.TCH)
+V.TCH$group <- "teacher"
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+library(igraph)
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+plot(g,layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+```
+#Part 2
+```{r}
+library (dplyr)
+```
+
+#First we will separate the teachers from our original data frame
+```{r}
+V.TCH2 <- dplyr::select(D1, tid, t.gender, t.expertise)
+```
+
+#Add a variable that describes that they are teachers
+```{r}
+V.TCH2$group <- "teacher"
+```
+
+#Now repeat this process for the students
+```{r}
+V.STD2 <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD2$group <- "student"
+```
+
+#Make sure that the student and teacher data frames have the same variables names
+```{r}
+names(V.TCH2) <- c("id", "gender", "topic", "group")
+names(V.STD2) <- c("id", "gender", "topic", "group")
+```
+#Add frequencies to V.TCH2 and V.STD2
+```{r}
+library(data.table)
+dt.STD2 = data.table(V.STD2)
+dt.STD2[,'freq-id':=.N, by=id]
+dt.TCH2 = data.table(V.TCH2)
+dt.TCH2[,'freq-id':=.N, by=id]
+```
+
+#Remove all the repeats so that we just have a list of each teacher and their characteristics and add two data frame togetger
+```{r}
+V.STD2<-unique(as.data.frame(dt.STD2))
+V.TCH2<-unique(as.data.frame(dt.TCH2))
+VERTEX2<-dplyr::bind_rows(V.TCH2, V.STD2)
+```
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX2.
+```{r}
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX2)
+```
+#Set up color and size of the vertices
+```{r}
+V(g2)$color<-ifelse(VERTEX2$group=="student", "lightblue", "orange")
+```
+
+```{r}
+plot(g2, layout = layout.fruchterman.reingold,
+vertex.size = VERTEX2$`freq-id`,
+vertex.frame.color= NA,
+vertex.label.color = "black",
+vertex.label.family = "sans",
+edge.width=EDGE$count,  
+edge.color="gray")
+```
+#Part 3
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+
