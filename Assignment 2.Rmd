@@ -2,13 +2,35 @@
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+install.packages("igraph")
+```
+```{r}
+library(igraph)
+```
+
+
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+
+```{r}
+D1 <- read.csv("discipline-data.csv", header=TRUE)
+```
+
+```{r}
+D1
+```
+
+
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
 D1$stid <- as.factor(D1$stid)
+```
+
+```{r}
+D1
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -23,6 +45,10 @@ library(dplyr)
 D2 <- dplyr::select(D1, tid, stid)
 ```
 
+```{r}
+D2
+```
+
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
@@ -34,8 +60,8 @@ names(EDGE) <- c("from", "to", "count")
 ```
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
-
 ```{r}
+
 
 #First we will separate the teachers from our original data frame
 V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
@@ -58,7 +84,22 @@ VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
 
 ```
 
+```{r}
+EDGE
+```
+
 Now we have both a Vertex and Edge list it is time to plot our graph!
+```{r}
+V.STD
+```
+```{r}
+V.TCH
+```
+
+```{r}
+VERTEX
+```
+
 
 ```{r}
 #Load the igraph package
@@ -85,6 +126,43 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+library(dplyr)
+library(tidyr)
+#Calculate disciplinary action count for students
+S.SUM <- EDGE %>% group_by(to) %>% summarise(sum(count))
+names(S.SUM) <- c("id", "count")
+#Calculate disciplinary action count for teacherss
+T.SUM <- EDGE %>% group_by(from) %>% summarise(sum(count))
+names(T.SUM) <- c("id", "count")
+#Bind the two count data frames
+SUM <- dplyr::bind_rows(T.SUM, S.SUM)
+#Merge count into vertex list
+VERTEX <- full_join(VERTEX, SUM, by = "id")
+#Regenerate the graph object g using the new data
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+#Plot graph shrinking arrow size and sizing vertices to count number
+plot(g, layout=layout.fruchterman.reingold,
+    vertex.color=as.factor(VERTEX$gender),
+    edge.arrow.size = 0.5,
+    edge.width=EDGE$count,
+    vertex.size = VERTEX$count*2)
+
+```
+
+```{r}
+T.SUM
+```
+```{r}
+S.SUM
+```
+```{r}
+SUM
+```
+
+
+
+
 
 ## Part III
 
