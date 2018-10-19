@@ -1,0 +1,6 @@
+```{r}
+install.packages("igraph")
+library(igraph)
+g <- sample_gnp(10, 0.5, directed = FALSE, loops = FALSE)
+??sample_gnp
+```
