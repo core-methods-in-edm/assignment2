@@ -86,9 +86,75 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+
+NS<-group_by(EDGE,to)%>%summarise(time=sum(count))
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, vertex.size=NS$time, edge.width=EDGE$count)
+
+```
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+```{r}
+library(dplyr)
+library(tidyr)
+
+class<-read.csv("HUDK4050-2018-classes.csv",header=TRUE, sep=",")
+
+#gsub
+
+class1<-filter(class,Progress==100)
+
+class2<-select(class1, Q8,Q9,Q1,Q3,Q4,Q5,Q6,Q7)
+
+class3<-gather(class2,Q,course,Q1,Q3,Q4,Q5,Q6,Q7)
+
+class4<-unite(class3,name,"Q8","Q9")
+
+class5<-count(class4,name,course)
+
+class6<-filter(class5,class5$course!="")
+
+class6$course<-gsub(" ","", class6$course)
+
+class6<-filter(class6,class6$course!="HUDK4050")
+
+class7<-spread(class6,course, n)
+
+class7[is.na(class7)] <- 0 
+
+class7<-as.data.frame(class7)
+
+rownames(class7)<-class7$name
+
+class7$name <- NULL
+
+class8<-t(class7)
+
+M1<-as.matrix(class7)
+
+M2<-as.matrix(class8)
+
+M3<-M1 %*% M2
+
+diag(M3)<-0
+
+```
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+g2 <- graph.adjacency(M3,mode="undirected") 
+
+plot(g2,layout=layout.fruchterman.reingold) 
+
+which.max(degree(g2))
+
+which.max(betweenness(g2))
+
+plot(g2,layout=layout.fruchterman.reingold, vertex.size=degree(g2)/5,edge.width=edge_betweenness(g2)/10) 
+
+```
 
