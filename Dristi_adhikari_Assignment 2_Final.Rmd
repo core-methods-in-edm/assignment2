@@ -1,0 +1,101 @@
+---
+title: "DristiAdhikari_Assignment2-Final"
+author: "DA"
+date: "October 22, 2018"
+output: html_document
+---
+
+```{r}
+#Part1
+library(igraph)
+D1 <- read.csv("discipline-data.csv", header = TRUE)
+D1$stid <- as.factor(D1$stid)
+library(dplyr)
+D2 <- dplyr::select(D1, tid, stid)
+EDGE <- dplyr::count(D2, tid, stid)
+names(EDGE) <- c("from", "to", "count")
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+V.TCH <- unique(V.TCH)
+V.TCH$group <- "teacher"
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+library(igraph)
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+plot(g,layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+#Part2
+#stuent - first disciplinary count for teachers, also change the titles
+StudentED <- EDGE %>% group_by(to) %>% summarize(sum(count)) 
+names(StudentED) <- c("id","count")
+#second, for teachers, also change titles
+TeachersED <- EDGE %>% group_by(from) %>% summarize(sum(count))
+#bamed(data) <- c("title", "title") will change the titles
+names(TeachersED) <- c("id","count")
+#next, need to combine the two: use bind_rows
+Combined <- bind_rows(StudentED, TeachersED)
+VERTEX1 <- full_join(VERTEX, Combined, by="id")
+#graph for the two
+g3 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
+plot(g3,layout=layout.fruchterman.reingold, vertex.color=VERTEX1$Id)
+g3
+
+#Part3
+DF1 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+#x <-df[row, cloumn]
+DF2 <- DF1[-c(1,2), ]
+
+#this can also be done through tidyr (note this changes the SN)
+library(dplyr)
+library(tidyr)
+DF3 <- slice(DF1, -(1:2))
+#select rows from Q8 to Q6- R reads the name 
+DF4 <- select(DF3, Q8:Q6)
+#other way to do this - DF4 <- df[,15:21]
+#changing row names
+colnames(DF4) <- c("First Name", "Last Name", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5")
+#another way to do this: df4 <- rename(df4, "First Name = Q8")
+#clean spaces, combine first and last names, delte empty rows and get rid of duplicates
+#change variables to character
+DF4$`Class 1` <- as.character(DF4$`Class 1`)
+DF4$`Class 2` <- as.character(DF4$`Class 2`)
+DF4$`Class 3` <- as.character(DF4$`Class 3`)
+DF4$`Class 4` <- as.character(DF4$`Class 4`)
+DF4$`Class 5` <- as.character(DF4$`Class 5`)
+#take spaces away from names
+DF4$`Class 1` <- gsub(" ", "", DF4$`Class 1`)
+DF4$`Class 2` <- gsub(" ", "", DF4$`Class 2`)
+DF4$`Class 3` <- gsub(" ", "", DF4$`Class 3`)
+DF4$`Class 4` <- gsub(" ", "", DF4$`Class 4`)
+DF4$`Class 5` <- gsub(" ", "", DF4$`Class 5`)
+#combine first and last names
+DF5 <- unite(DF4,"Name", "First Name", "Last Name")
+#Look at rows wehre it is not na
+DF6 <- filter(DF5, Name != "_")
+#create two variables as student names and course names
+DF7 <- gather(DF6, key=class, n, 2:6, na.rm=TRUE) %>% select(-class)
+DF7 <- filter(DF7, n > " ")
+#remove duplicate student names
+DF8 <- unique(DF7)
+DF8$count <- 1 
+#add a value coulumn to spread by
+#Create Person Class Matrix
+DF9 <- spread(DF8, n, count, fill = 0) 
+DF10 <- select(DF9, -Name) %>% as.matrix()
+row.names(DF10) <-DF9[,1]
+#create person to person matrix
+DF11 <- DF10 %*% t(DF10)
+#Create igraph between centrality and degree
+library(igraph)
+DF12 <- graph_from_adjacency_matrix(DF11, mode = c("undirected"), weighted = NULL, diag = FALSE,
+  add.colnames = NULL, add.rownames = NA)
+plot(DF12)
+betweenness(DF12, v = V(DF12), directed = TRUE, weights = NULL,nobigint = TRUE, normalized = FALSE)
+
+```
+
