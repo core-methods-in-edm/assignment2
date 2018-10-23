@@ -1,0 +1,145 @@
+---
+title: "Assignment2-Social Network Graph"
+author: "Aidi"
+date: "10/21/2018"
+output: html_document
+---
+
+## Part 1
+# Discipline graph
+```{r}
+library(igraph)
+library(dplyr)
+library(tidyr)
+
+# load the data file
+D1<-read.csv("discipline-data.csv", header=TRUE)
+D1$stid<-as.factor(D1$stid)
+
+# create from-to and vertex attributes
+# create from-to EDGE
+D2<-select(D1, tid, stid)
+EDGE<-count(D2,tid,stid)
+names(EDGE)<-c("from","to","count")
+
+# create vertex
+t1<-select(D1, tid, t.gender, t.expertise)
+t1<-unique(t1)
+t1$group<-"teacher"
+names(t1)<-c("ID","gender","study.area","group")
+
+s1<-select(D1, stid, s.gender, s.major)
+s1<-unique(s1)
+s1$group<-"student"
+names(s1)<-c("ID","gender","study.area","group")
+
+VERTEX<-bind_rows(t1, s1)
+
+# create a graph object
+g1<-graph.data.frame(EDGE, vertices=VERTEX, directed=TRUE)
+
+# create the network graph
+plot(g1, layout=layout.fruchterman.reingold, edge.arrow.size=0.3)
+
+plot(g1, layout=layout.fruchterman.reingold, edge.arrow.size=0.3, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+```
+
+## Part 2
+# Sizing vertices according to disciplinary action
+
+```{r}
+# add a new attribute in VERTEX
+t2<-EDGE%>%select(from,count)%>%group_by(from)%>%summarize(sum(count))
+names(t2)<-c("ID","count")
+s2<-EDGE%>%select(to,count)%>%group_by(to)%>%summarize(sum(count))
+names(s2)<-c("ID","count")
+INFO<-bind_rows(t2,s2)
+
+VERTEX<-full_join(VERTEX, INFO, by="ID")
+
+g2<-graph.data.frame(EDGE, vertices=VERTEX, directed=TRUE)
+plot(g2, layout=layout.fruchterman.reingold, edge.arrow.size=0.3,edge.width=EDGE$count, vertex.color=VERTEX$gender, vertex.size=VERTEX$count, vertex.shapes=as.factor(VERTEX$group))
+
+```
+
+## Part 3
+# hudk4050-classes network
+
+```{r}
+# load the data file and clean the data
+d1<-read.csv("HUDK4050-2018-classes.csv", header=TRUE)
+d1<-slice(d1,-(1:2))
+
+# select variables and clean spaces 
+d1<-d1%>%select(Q8:Q6)
+d1<-lapply(d1, gsub, pattern=" ", replacement="")
+
+# unite names into one column
+d1<-as.data.frame(d1)
+names(d1)<-c("first name", "last name", paste0("class_",1:5))
+d1<-unite(d1, Name, "first name", "last name", sep=" ")
+d1<-filter(d1, Name > 0)
+
+# gather and spread classes as variables
+d2<-gather(d1, class_number, class_code, 2:6)
+d2<-filter(d2, class_code > 0)%>%select(-class_number)
+d2<-filter(d2, class_code != "HUDK4050")
+
+d2$count<-1
+d2<-unique(d2)
+d3<-spread(d2, class_code, count, fill=0)
+
+# create adjacency matrix
+row.names(d3)<-d3$Name
+d3$Name<-NULL
+d3<-as.matrix(d3)
+
+d4<-d3 %*% t(d3)
+diag(d4)<-NA
+
+# create the network graph
+g3<-graph.adjacency(d4, mode="undirected")
+
+plot(g3, layout=layout.fruchterman.reingold, vertex.label.size=0.5)
+
+# Calculate the degree centrality of the nodes
+degree(g3)
+
+# Calculate the betweeness centrality
+betweenness(g3)
+
+```
+
+```{r}
+# try to make from-to and vertex attribute graph
+
+# create edge attributes
+df1<-gather(d1, class_number, class, 2:6, na.rm=TRUE)%>%select(-class_number)
+df1<-filter(df1, class != "HUDK4050", class > 0)
+
+names(df1)<-c("from","to")
+df1<-unique(df1)
+df1$count<-1
+
+# create vertex attribute
+stu<-select(df1, from, count)
+stu<-group_by(stu, from)%>%summarise(sum(count))
+stu<-unique(stu)
+stu$group<-"student"
+names(stu)<-c("id","count","group")
+
+class<-select(df1, to, count)
+class<-group_by(class, to)%>%summarise(sum(count))
+class<-unique(class)
+class$group<-"class"
+names(class)<-c("id", "count", "group")
+
+vertex4050<-bind_rows(stu, class)
+
+# create the graph
+g4<-graph.data.frame(df1, directed = TRUE, vertices = vertex4050)
+
+plot(g4, layout=layout.fruchterman.reingold, edge.arrow.size=0.2, vertex.color=as.factor(vertex4050$group), vertex.size=vertex4050$count, vertex.label.size=0.1)
+
+```
+
