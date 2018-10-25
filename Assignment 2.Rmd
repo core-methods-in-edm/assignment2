@@ -6,6 +6,10 @@ Start by installing the "igraph" package. Once you have installed igraph, load t
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
+```{r}
+library(readr)
+D1 <- read_csv('discipline-data.csv')
+```
 
 ```{r}
 D1$stid <- as.factor(D1$stid)
@@ -74,7 +78,7 @@ g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
-
+VERTEX$gender <-as.factor(VERTEX$gender)
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
@@ -86,9 +90,72 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+D1$stid <- as.factor(D1$stid)
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.TCH$group <- 'Teacher'
+V.STD$group <- 'Student'
+TCH_count <- dplyr::count(V.TCH, tid)
+STD_count <- dplyr::count(V.STD,stid)
+V.TCH <- unique(V.TCH)
+V.STD <- unique(V.STD)
+VERTEX_TCH <- merge(TCH_count,V.TCH,by = 'tid')
+VERTEX_STD <- merge(STD_count,V.STD,by = 'stid')
+names(VERTEX_TCH) <- c("id","count","gender","topic","group")
+names(VERTEX_STD) <- c("id","count","gender","topic","group")
+VERTEX <- dplyr::bind_rows(VERTEX_TCH,VERTEX_STD)
+```
+
+```{r}
+D2 <- dplyr::select(D1, tid, stid)
+EDGE <- dplyr::count(D2, tid, stid)
+
+names(EDGE) <- c("from", "to", "count")
+```
+
+```{r}
+library(igraph)
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+VERTEX$gender <-as.factor(VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold,vertex.color=VERTEX$gender, edge.width=EDGE$count,vertex.size = VERTEX$count)
+```
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+```{r}
+
+library(tidyverse)
+library(igraph)
+data2018 <- read_csv("HUDK4050-2018-classes.csv",skip = 1)
+data2018 <- data2018 %>% select('First Name','Last Name','Class 1','Class 2','Class 3','Class 4','Class 5')
+data2018 <- data2018[-1,]
+data2018$name <- paste(data2018$`First Name`,data2018$`Last Name`, sep = " ")
+data2018$`Class 1` <- sub(" ","",data2018$`Class 1`)
+data2018$`Class 2` <- sub(" ","",data2018$`Class 2`)
+data2018$`Class 3` <- sub(" ","",data2018$`Class 3`)
+data2018$`Class 4` <- sub(" ","",data2018$`Class 4`)
+data2018$`Class 5` <- sub(" ","",data2018$`Class 5`)
+data2018 <- dplyr::filter(data2018,!is.na(data2018$`First Name`))
+data2018 <- data2018 %>% select('name',everything())
+data2018[2:3] <- NULL
+newdata <- data2018 %>% gather(key,value,-name) %>% group_by(name,value)%>%summarise(count=n())%>% spread(value,count,fill=0)%>%as.data.frame()
+newdata[58] <- NULL
+data <- setNames(data.frame(t(newdata[,-1])), newdata[,1])
+matrix <- as.matrix(data)
+new <- t(data)
+final <- new %*% matrix
+diag(final)<- NA
+g <- graph_from_adjacency_matrix(final,mode=c('undirected'), weighted=TRUE,diag = FALSE)
+E(g)$color <-E(g)$weight
+E(g)$width <-E(g)$weight
+plot(g,layout=layout.fruchterman.reingold,edge.width=g$weight,edge.color=g$weight)
+
+betweenness(g)
+centr_degree(g)
+
+```
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
