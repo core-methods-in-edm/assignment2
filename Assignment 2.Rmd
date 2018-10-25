@@ -170,3 +170,8 @@ Now practice with data from our class. Please create a **person-network** with t
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+C1 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+C1
+```
+

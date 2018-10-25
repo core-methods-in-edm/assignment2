@@ -14,3 +14,5 @@ The instructions to Assignment 2 are in the Assignment 2.rmd file. Assignments a
 Once you have finished, commit, push and pull your assignment back to the main branch.
 
 Good luck!
+
+This is a line from RStudio.
