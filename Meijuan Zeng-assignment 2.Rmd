@@ -158,7 +158,7 @@ diag(d6) <- NA
 #create network
 library(igraph)
 g <- graph.adjacency(d6, mode = "undirected", weighted = TRUE)
-plot(g,layout = layout.fruchterman.reingold, edge.arrow.size = 0.5, vertex.label.size = 5）
+plot(g,layout = layout.fruchterman.reingold, edge.arrow.size = 0.5, vertex.label.size = 5)
 
 #centrality
 degree(g)    
