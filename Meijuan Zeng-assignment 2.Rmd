@@ -27,7 +27,7 @@ First we will isolate the variables that are of interest: tid and stid
 ```{r}
 library(dplyr)
 
-D2 <- dplyr::select(D1, tid, stid)
+D2 <- dplyr::select(D1, tid, stid)  
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
@@ -158,13 +158,13 @@ diag(d6) <- NA
 #create network
 library(igraph)
 g <- graph.adjacency(d6, mode = "undirected", weighted = TRUE)
-plot(g,layout = layout.fruchterman.reingold, edge.arrow.size = 0.5, vertex.label.size = 5)
+plot(g,layout = layout.fruchterman.reingold, edge.arrow.size = 0.5, vertex.label.size = 5）
 
 #centrality
-degree(g)
+degree(g)    
 
 #betweeness centrality
 betweenness(g)
-```
+```  
 
 
