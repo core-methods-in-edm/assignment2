@@ -125,7 +125,6 @@ plot(g,layout=layout.fruchterman.reingold,vertex.color=VERTEX$gender, edge.width
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 ```{r}
-
 library(tidyverse)
 library(igraph)
 data2018 <- read_csv("HUDK4050-2018-classes.csv",skip = 1)
@@ -154,8 +153,23 @@ plot(g,layout=layout.fruchterman.reingold,edge.width=g$weight,edge.color=g$weigh
 
 betweenness(g)
 centr_degree(g)
-
 ```
 
+```{r}
+#k modes clustering
+library(klaR)
+library(MASS)
+modes <- kmodes(newdata,4,weighted = FALSE)
+newdata1 <- subset(newdata,select = -c(HUDK4050))
+data <- setNames(data.frame(t(newdata1[,-1])), newdata1[,1])
+matrix <- as.matrix(data)
+new <- t(data)
+final <- new %*% matrix
+diag(final)<- NA
+g <- graph_from_adjacency_matrix(final,mode=c('undirected'), weighted=TRUE,diag = FALSE)
+g <- graph_from_adjacency_matrix(final,mode=c('undirected'), weighted=TRUE,diag = FALSE)
+V(g)$color <-modes$cluster
+plot(g,layout=layout.fruchterman.reingold)
+```
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
