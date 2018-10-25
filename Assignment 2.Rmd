@@ -8,6 +8,8 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+
+D1 = read.csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -19,6 +21,7 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
+library(tidyr)
 
 D2 <- dplyr::select(D1, tid, stid)
 ```
@@ -80,15 +83,113 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+
+```{r}
+# student table
+student_data <- select(EDGE,to,count)
+# sum up incidents per student
+student_data <- group_by(student_data,to)
+student_data <- summarise(student_data, count=sum(count))
+student_data <- rename(student_data,id=to)
+# teacher table
+teacher_data <- select(EDGE,from,count)
+# sum up incidents per teacher
+teacher_data <- group_by(teacher_data,from)
+teacher_data <- summarise(teacher_data, count=sum(count))
+teacher_data <- rename(teacher_data,id=from)
+# merge student/teacher data
+full_data <- full_join(student_data,teacher_data,by="id")
+full_data <- group_by(full_data,id)
+full_data <- transmute(full_data,count=sum(count.x,count.y,na.rm=TRUE))
+# merge into vertex data
+VERTEX <- left_join(VERTEX,full_data,by="id")
+# size vertices in proportion to number of incidences (# * 3.5 for visibility)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, vertex.size=(VERTEX$count*3.5))
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+# formats non-empty class names
+# if class name contains a space ("HUDK 4050"), leave it alone; if not, then add a space where appropriate
+format_class <- function(e) {
+  s <- as.character(e)
+  if((nchar(s)>0) && (grepl(" ",s,fixed=TRUE)==1)) { # string contains space
+      s
+  } else { # no space
+      paste(substring(s,1,4),substring(s,5),sep=" ")
+  }
+}
 
+class_data <- read.csv("HUDK4050-2018-classes.csv")
+# get rid of headers, and also blank/duplicate data
+class_data <- class_data[-c(1,2,3,39),]
+# subset down to name and class columns
+class_data <- select(class_data, Q8,Q9,Q1,Q3,Q4,Q5,Q6)
+
+# rename columns for clarity
+class_data <- rename(class_data,first_name=Q8,last_name=Q9,class1=Q1,class2=Q3,class3=Q4,class4=Q5,class5=Q6)
+# also reformat data in dataframe
+# combine first name + last name into single name
+class_data <- transmute(class_data, name=paste(first_name,last_name,sep=" "),class1,class2,class3,class4,class5)
+# mostly done cleaning data, aside from something to apply later
+
+# construct person-class table
+# gather classes into 1 column, adding (and then removing) a filler column
+# there's probably a neater way to do this, but I can't figure it out...
+class_data <- gather(class_data,key="discard_me",value="class",2:6)
+class_data <- select(class_data,name,class)
+# finish formatting all classes, in particular deleting blanks and adding spaces to things like "HUDK4050"
+class_data <- class_data[(class_data$class != ""),]
+class_data$class <- sapply(class_data$class,format_class)
+# add a "taken" column of all 1's (indicating each student is taking their associated class(es))
+class_data$taken <- 1
+# spread the table out into a matrix: 1 if student is taking a given class, NA otherwise
+class_wdata <- spread(class_data,class,taken)
+# change all NAs to 0, so the matrix is full of 1s/0s for taking/not taking
+class_wdata[is.na(class_wdata)] <- 0
+
+# create the person-class matrix, excluding the name fields to make a numeric matrix
+pc_mtx <- select(class_wdata,-name)
+pc_mtx <- as.matrix(pc_mtx)
+
+# create the person-person matrix by multiplying the person-class matrix by its transposition
+pp_mtx <- pc_mtx %*% t(pc_mtx)
+# add row/column names, i.e., student names
+rownames(pp_mtx) <- class_wdata$name
+colnames(pp_mtx) <- class_wdata$name
+# result: pp_mtx contains the number of classes each person shares with each other person (1-5, since everyone is taking HUDK 4050) => undirected adjacency matrix weighted by number of shared classes
+
+# create graph from this person-person adjacency matrix; ignore diagonals, as we're not interested in how many classes a person shares with themselves
+g2 <- graph_from_adjacency_matrix(pp_mtx, mode = c("undirected"), weighted = TRUE, diag = FALSE,add.colnames = NULL, add.rownames = NA)
+#plot the graph
+plot(g2,layout=layout.fruchterman.reingold,vertex.label.cex=0.5,width=10)
+
+# create a "sparse" graph that considers shared classes OUTSIDE of HUDK 4050
+pp_mtx_sparse <- pp_mtx - 1 # just subtract 1 from all elements, which will discount the class everyone shares
+g3 <- graph_from_adjacency_matrix(pp_mtx_sparse, mode = c("undirected"), weighted = TRUE, diag = FALSE,add.colnames = NULL, add.rownames = NA)
+# plot this as well
+plot(g3,layout=layout.fruchterman.reingold,vertex.label.cex=0.5,width=10)
+
+# Part 3.5: looking for the most central person(s)
+#betweenness centrality - look for the students with least score for the most central
+# use the original "dense" graph, since we want to consider all paths (shared classes)
+bc <- betweenness(g2)
+most_btwn_students <- names(bc[bc==min(bc)]) # get names of students with minimum score
+# degree - look for the students highest degrees
+# use the "sparse" graph, since the dense graph gives everyone an equal degree of 38 due to sharing HUDK 4050
+dc <- degree(g3)
+most_connected_students <- names(dc[dc==max(dc)])
+
+# create a vector of central students by combining the above results and removing any duplicates
+most_central_students = unique(c(most_btwn_students,most_connected_students))
+```
