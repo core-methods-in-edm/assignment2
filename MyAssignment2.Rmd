@@ -1,0 +1,174 @@
+---
+title: "MyAssignment2"
+author: "Elliot Hu-Au"
+date: "October 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+R Markdown for HUDK 4050: Assignment 2
+
+Part II
+```{r}
+
+
+E1<-dplyr::select(EDGE,count)
+student_count<- EDGE %>% group_by(EDGE$to) %>% summarize(sum = sum(count))
+names(student_count)[1]<-"id"
+new_count<- merge(VERTEX,student_count,by="id")
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=all_totals)
+
+teach_count<- EDGE %>% group_by(from) %>% summarize(sum(count))
+names(teach_count)[2]<-"sum"
+names(teach_count)[1]<-"id"
+new_teach_count<- merge (VERTEX,teach_count, by="id")
+
+all_totals<-dplyr::bind_rows(new_teach_count,new_count)
+nodeSize<- setNames(c(all_totals$sum),c(all_totals$id))
+
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=all_totals$gender, edge.width=EDGE$count, vertex.size=all_totals$sum*3)
+```
+
+## Part III
+
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+
+```{r}
+
+class_2018<-read.csv("HUDK4050-2018-classes.csv")
+class_2018<-select(class_2018,"Q8", "Q9", "Q1", "Q3", "Q4", "Q5", "Q6")
+class_2018<- class_2018[-c(1,2,3,39),]
+class_2018<-unite(class_2018, "name", Q8,Q9, sep = " ", remove= TRUE)
+
+group_by(class_2018, Q1)
+class_2018%>% summarise(name)
+
+#creating the tall dataframe of names and classes
+names_class1<-select(class_2018, name, Q1)
+
+names_class2<-select(class_2018, name, Q3)
+names_class2<-names_class2[-c(1,39),]
+
+names_class3<-select(class_2018,name, Q4)
+names_class3<-arrange(names_class3, Q4)
+names_class3<-names_class3[-c(1:7),]
+
+names_class4<-select(class_2018,name, Q5)
+names_class4<-arrange(names_class4, Q5)
+names_class4<-names_class4[-c(1:12),]
+
+names_class5<-select(class_2018, name, Q6)
+names_class5<-arrange(names_class5, Q6)
+names_class5<-names_class5[-c(1:30),]
+
+names(names_class1)<-c("name","class")
+names(names_class2)<-c("name","class")
+names(names_class3)<-c("name","class")
+names(names_class4)<-c("name","class")
+names(names_class5)<-c("name","class")
+
+n_cl_total<-dplyr::bind_rows(names_class1,names_class2,names_class3, names_class4, names_class5)
+n_cl_total<-arrange(n_cl_total, name)
+n_cl_total$enroll<-1
+#put a space in the class values where there is no space
+n_cl_total$class<-gsub('([A-Z])([0-9])', '\\1 \\2', n_cl_total$class)
+
+
+#create dataframe with each student as an observation and classes as each column
+n2<-spread(n_cl_total,"class", enroll)
+n2[is.na(n2)]<-0
+
+
+#multiply matrix by transpose to get people to people matrix
+n2_matrix<-as.matrix(n2, rownames.force = NA, dimnames(n2$name,class_list))
+n3_matrix<-n2_matrix[,-1]
+mode(n3_matrix)<-"numeric"
+n3_tran<-n3_matrix %*% t(n3_matrix)
+
+#giving names to the matrix dimensions
+rownames(n3_tran)<-n2$name
+colnames(n3_tran)<-n2$name
+n4_tran<-n3_tran
+
+#removing the HUDK4050 data since everyone is connected to each other through it
+noHUDK4050mat<-n4_tran-1
+diag(noHUDK4050mat)<-0
+class_net<-graph.adjacency(noHUDK4050mat, mode="undirected", diag=FALSE)
+plot(class_net, layout=layout_in_circle)
+
+#betweenness calculation without HUDK4050 connections
+B1<-betweenness(class_net, v = V(class_net), directed = FALSE, weights = NULL, normalized = FALSE)
+
+#eigen centrality without HUDK 4050 connections
+E1<-eigen_centrality(class_net, directed = FALSE, scale = TRUE, weights = NULL,
+  options = arpack_defaults)
+
+#degree without HUDK 4050 connections
+Deg1<-degree(class_net, v = V(class_net), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
+
+```
+
+
+Graph and calculations with HUDK 4050 connections included
+
+
+```{r}
+
+##graph with HUDK 4050 connections
+n3_temp<- n3_tran
+diag(n3_temp)<-0
+class_net2<-graph.adjacency(n3_temp, mode="undirected", diag=FALSE)
+plot(class_net2, layout=layout_in_circle)
+
+#betweenness calculation WITH HUDK4050 connections
+B2<-betweenness(class_net2, v = V(class_net2), directed = FALSE, weights = NULL, normalized = FALSE)
+
+#eigen centrality WITH HUDK 4050 connections
+E2<-eigen_centrality(class_net2, directed = FALSE, scale = TRUE, weights = NULL,
+  options = arpack_defaults)
+
+#degree wWITH HUDK 4050 connections
+Deg2<-degree(class_net2, v = V(class_net2), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
+
+
+
+
+```
+
+
+
+##Please ignore what is below. This was just test stuff.
+
+```{r}
+##stuff underneath this was test stuff...please ignore
+#creating class list for
+class_list<-unique(n_cl_total$class)
+class_list<-as.data.frame(class_list)
+class_list<-arrange(class_list, class_list)
+
+#creating the EDGE data frame
+class_2018_edge <- n_cl_total
+C1<-n_cl_total
+C1<- filter(n_cl_total,class == "HUDK 4050")
+
+#arranged total students and classes alphabetically by class
+C2<- arrange(n_cl_total, class)
+
+
+#how many classes with more than 1 student
+class_count<- as.data.frame(table(n_cl_total$class))
+class_count <- subset(class_count,Freq != 1)
+
+unique(n_distinct(n_cl_total$class))
+names(class_2018_edge) <-(c("from", "to"))
+```
+
+
