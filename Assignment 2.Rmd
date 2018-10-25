@@ -121,12 +121,14 @@ plot(g,layout=layout.fruchterman.reingold,
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+
 ```{r}
 
 library(tidyr)
 library(dplyr)
 
 ourClass = read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+ourClass <- ourClass[-c(1,2),]
 ourClass = tidyr::unite(ourClass, Name, "Q8", "Q9", sep = " ", remove = TRUE)
 
 ourClass = tidyr::gather(ourClass, question, course, "Q1","Q3","Q4","Q5","Q6","Q7", na.rm = TRUE, convert = FALSE)
@@ -136,19 +138,22 @@ if (ourClass$course == "HUDK4050"){
   ourClass$course = "HUDK 4050"
 }
 
-ourClass[ourClass[, "course"] == "HUDK4050", "course"] <- "HUDK 4050"
+ourClass <- ourClass[, -c(1:14)] 
+ourClass <- ourClass[, -c(2)] 
 
-ourClass = dplyr::filter(ourClass, course== "HUDK 4050")
+ourClass = dplyr::filter(ourClass, course!= "HUDK 4050")
 
 #removing the duplicate name
-ourClass = ourClass[-14, ]
+#ourClass = ourClass[-14, ]
 
 ourClass$Count = 1
+ourClass = filter(ourClass, ourClass$course != "")
 
 ourClass = tidyr::spread(ourClass, course, Count)
 
 row.names(ourClass) = ourClass$Name
 ourClass$Name = NULL
+
 
 ourClass = ifelse(is.na(ourClass), 0, 1)
 
@@ -162,7 +167,7 @@ diag(ourClass) = NA
 ```{r}
 classGraph = graph.adjacency(ourClass, mode="undirected")
 
-plot(classGraph,layout=layout.fruchterman.reingold, vertex.size=10)
+plot(classGraph,layout=layout.fruchterman.reingold, vertex.size=5)
 
 ```
 
