@@ -142,16 +142,34 @@ plot(g, layout=layout.fruchterman.reingold, vertex.color = VERTEX$gender, vertex
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 ```{r}
 library(tidyr)
+library(dplyr)
 df <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
-#delete some rows(two ways)
+#delete some rows
 df <- df[-c(1,2), ]
+
+#another way 
+#subset rows in dytyr
+# df2 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+# df2 <- slice(df2, -(1:2))
 df <- select(df,Q8:Q6)
+
+```
+
+```{r}
+# the most efficient way
+df <- df[-c(1,2), 15:21 ]
+```
+
+```{r}
+# df
 ?unite
 df <- unite(df, "name", c("Q8", "Q9"), sep = " ")
 df[] <- lapply(df, as.character)
 ```
 
+
 delete white space
+gsub
 ```{r}
 df$Q1 <- gsub('\\s+', '', df$Q1)
 df$Q3 <- gsub('\\s+', '', df$Q3)
@@ -160,7 +178,8 @@ df$Q5 <- gsub('\\s+', '', df$Q5)
 df$Q6 <- gsub('\\s+', '', df$Q6)
 ```
 
-another way
+option 2
+gsub in regular expression(正则表达式)
 ```{r}
 for (row in 2:ncol(df)) { 
   for (col in 1:nrow(df)) {
@@ -169,17 +188,36 @@ for (row in 2:ncol(df)) {
 }
 ```
 
+option 3
+more readable
+but it does not work on factor
+
+```{r}
+gsub(" ", "", df$`1`)
+```
+
+
 ```{r}
 df <- df[!(is.na(df$Q1) | df$Q1==""), ]
 names(df) <- c("name", "1", "2", "3", "4", "5")
+
+#optional way: 
+# names(df) <- unlist(df[1, 15:21])  
+# colnames <- c(...)
+# df <- rename(df, "first name" = Q8)
+
+
 V_hudk_stu <- select(df, name)
 ?gather
 course <- df %>% 
   gather(num, course_name, 2:6) 
+
 course <- course %>% 
   select(course_name)
 course <- unique(course)
 V_course <- course[!(is.na(course$course_name) |course$course_name == ""), ]
+
+# filter
 
 V_hudk_stu$name <- as.factor(V_hudk_stu$name)
 V_course <- as.data.frame(V_course)
@@ -208,14 +246,25 @@ V$group <- as.factor(V$group)
 V$name <- as.factor(V$name)
 
 g <- graph.data.frame(E, directed = FALSE, vertices = V)
-plot(g, layout = layout.fruchterman.reingold, vertex.color=V$group)
+plot(g, layout = layout.fruchterman.reingold, vertex.color=V$group, edge.arrow.size=0,  vertex.label=NA, vertex.size = 5)
+?plot
 
+cen <- eigen_centrality(g, directed = FALSE, scale = TRUE, weights = NULL,
+  options = arpack_defaults)
 
+degree(g)
 
 ```
+ 
+```{r}
+#create a matrix of student-course
+#add this so that it can be fillout
+df8$count <- 1
+df9 <- spread(df8, n, value, fill = 0) %>% as.matrix()
+class(df9)
+dim(df9)
 
-
-
-
+```
+ 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
 
