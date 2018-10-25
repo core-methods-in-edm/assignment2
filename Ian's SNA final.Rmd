@@ -1,0 +1,151 @@
+---
+title: "Ian Douglas Assignment 2"
+author: "ian douglas"
+date: "10/25/2018"
+output: html_document
+---
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(igraph)
+
+D1 <- read.csv("discipline-data.csv", header = TRUE)
+D1$stid <- as.factor(D1$stid)
+D2 <- dplyr::select(D1, tid, stid)
+EDGE <- dplyr::count(D2, tid, stid)
+names(EDGE) <- c("from", "to", "count")
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+```
+# Part II
+# Sizing vertices according to disciplinary action
+```{r}
+VERTEX$group<-as.factor(VERTEX$group)
+plot(g,layout=layout.auto,vertex.size=EDGE$count*3,vertex.color=VERTEX$group)
+
+
+library(dplyr)
+library(tidyr)
+#Calculate disciplinary action count for students
+S.SUM <- EDGE %>% group_by(to) %>% summarise(sum(count))
+names(S.SUM) <- c("id","count")
+#Calculate disciplinary action count for teachers
+T.SUM <- EDGE %>% group_by(from) %>% summarise(sum(count))
+names(T.SUM) <- c("id","count")
+#Bind the two count data frames
+SUM <- bind_rows(T.SUM, S.SUM)
+#Merge count into vertex list
+VERTEX <- full_join(VERTEX, SUM, by = "id")
+#Regenerate the graph object g using the new data
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+#Plot graph shrinking arrow size and sizing vertices to count number
+plot(g,layout=layout.fruchterman.reingold, 
+     vertex.color=as.factor(VERTEX$gender), 
+     edge.arrow.size = 0.5,
+     edge.width=EDGE$count,
+     vertex.size = VERTEX$count*2)
+```
+
+#Part III
+
+#Data Wrangling
+```{r}
+#Read data into
+D1 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+View(D1)
+
+#Merge First.name and Last.name variables to create unique ID because we have duplicate first and last names in the class
+D1 <- tidyr::unite(D1, Name, `Q8`, `Q9`, sep = " ", remove = TRUE)
+View(D1)
+D1 <- D1[-c(2,3,39),]
+
+#Reshape data to create a "course" variable (you will get a warning because there are missing cells)
+D2 <- tidyr::gather(D1, course.label, course, `Q1`, `Q3`, `Q4`, `Q5`, `Q6`, `Q7`, na.rm = TRUE, convert = FALSE)
+
+#Remove the "course.label" variable
+D2 <- dplyr::select(D2, Name, course)
+
+#Remove rows indicating HUDK4050 because all students are in this course and it will overwhelm the graph
+D2 <- dplyr::filter(D2, course > 0, course != "HUDK 4050")
+D2 <-dplyr::filter(D2,course>0,course != "Class 2")
+D2 <-dplyr::filter(D2,course>0,course != "Class 1")
+D2$course[9] <- "HUDK 5035"
+D2$course[10] <- "MSTU 5003"
+D2$course[41] <- "EDPA 6002"
+D2$course[44] <- "HUDK 4011"
+D2$course[45] <- "MSTU 4083"
+D2$course[71] <- "HUDM 4125"
+D2$course[72] <- "MSTU 4039"
+D2$course[96] <- "MSTU 4000"
+D2 <-dplyr::filter(D2,course>0,Name != "First Name Last Name")
+#Add a variable to be used to count the courses
+D2$Count <- 1
+
+#Reshape the data to create a person x class matrix
+D3 <- tidyr::spread(D2, course, Count)
+View(D3)
+#This was a bit of a trick, for the matrix command to work the row names needed to changed from an indice (1,2,3,etc) to the student names 
+row.names(D3) <- D3$Name
+D3$Name <- NULL
+
+D3 <- ifelse(is.na(D3), 0, 1)
+
+#Convert the data from data frame format to matrix format so it can be transposed
+D4 <- as.matrix(D3)
+View(D4)
+#Transpose matrix to produce a person x person matrix
+D5 <- D4 %*% t(D4)
+diag(D5) <- NA
+View(D5)
+```
+#Graphing
+```{r}
+install.packages("igraph")
+library(igraph)
+g <- graph.adjacency(D5,mode="undirected")
+
+plot(g,layout=layout.fruchterman.reingold, vertex.size=3)
+
+```
+#Centrality
+```{r}
+#Calculate the degree centrality of the nodes, showing who has the most connections
+degree(g)
+
+#Calculate the betweeness centrality, showing how many "shortest paths" pass through each node. This turns out to be uniformative for this graph as there are a bunch of people who are almost equally connected and a bunch of people who are unconnected.
+betweenness(g)
+
+
+```
+
+```{r}
+#Formative test question:For the following graph, which node will have the highest betweeness centrality?
+
+from <- c("A","A","B","C","F","E")
+to <- c("D","E","G","G","E","G")
+E1 <- data.frame(from,to)
+V1 <- data.frame(c("A","B","C","D","E","F","G"))
+t1 <- graph.data.frame(E1, directed = FALSE, V1)
+plot(t1)
+betweenness(t1)
+#Answer = E
+```
+
+
