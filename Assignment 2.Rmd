@@ -137,69 +137,83 @@ VERTEX$degree <- degree(g)
 plot(g, layout=layout.fruchterman.reingold, vertex.color = VERTEX$gender, vertex.size = VERTEX$degree, edge.width=EDGE$count, edge.arrow.size = 0.5)
 ```
 
+
+
+
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
 ```{r}
 library(tidyr)
 library(dplyr)
-df <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+df1 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
 #delete some rows
-df <- df[-c(1,2), ]
+df2 <- df1[-c(1,2), ]
 
 #another way 
 #subset rows in dytyr
 # df2 <- read.csv("HUDK4050-2018-classes.csv", header = TRUE)
 # df2 <- slice(df2, -(1:2))
-df <- select(df,Q8:Q6)
+df3 <- select(df2,Q8:Q6)
 
 ```
 
 ```{r}
 # the most efficient way
-df <- df[-c(1,2), 15:21 ]
+df3_2 <- df1[-c(1,2), 15:21 ]
 ```
 
 ```{r}
 # df
 ?unite
-df <- unite(df, "name", c("Q8", "Q9"), sep = " ")
-df[] <- lapply(df, as.character)
+df4 <- unite(df3, "name", c("Q8", "Q9"), sep = " ")
+df4[] <- lapply(df4, as.character)
 ```
 
 
 delete white space
 gsub
+regular expression(正则表达式)
+but it does not work on factor
 ```{r}
-df$Q1 <- gsub('\\s+', '', df$Q1)
-df$Q3 <- gsub('\\s+', '', df$Q3)
-df$Q4 <- gsub('\\s+', '', df$Q4)
-df$Q5 <- gsub('\\s+', '', df$Q5)
-df$Q6 <- gsub('\\s+', '', df$Q6)
+df4$Q1 <- gsub('\\s+', '', df4$Q1)
+df4$Q3 <- gsub('\\s+', '', df4$Q3)
+df4$Q4 <- gsub('\\s+', '', df4$Q4)
+df4$Q5 <- gsub('\\s+', '', df4$Q5)
+df4$Q6 <- gsub('\\s+', '', df4$Q6)
 ```
 
-option 2
-gsub in regular expression(正则表达式)
 ```{r}
-for (row in 2:ncol(df)) { 
-  for (col in 1:nrow(df)) {
-    df[col, row] <- gsub('\\s+', '', df[col, row]) 
+# command alt enter to run a chunck
+```
+
+
+option 2
+no regular expression
+```{r}
+df5 <- df3
+for (row in 2:ncol(df5)) { 
+  for (col in 1:nrow(df5)) {
+    df5[col, row] <- gsub(' ', '', df5[col, row]) 
   }
 }
 ```
 
 option 3
 more readable
-but it does not work on factor
-
 ```{r}
-gsub(" ", "", df$`1`)
+df6 <- df3
+df6$`Q1` <- gsub(" ", "", df6$`Q1`)
+df6$`Q2` <- gsub(" ", "", df6$`Q2`)
 ```
 
 
 ```{r}
-df <- df[!(is.na(df$Q1) | df$Q1==""), ]
-names(df) <- c("name", "1", "2", "3", "4", "5")
+library(tidyr)
+df5 <- df4[!(is.na(df4$Q1) | df4$Q1==""), ]
+names(df5) <- c("name", "1", "2", "3", "4", "5")
 
 #optional way: 
 # names(df) <- unlist(df[1, 15:21])  
@@ -207,9 +221,10 @@ names(df) <- c("name", "1", "2", "3", "4", "5")
 # df <- rename(df, "first name" = Q8)
 
 
-V_hudk_stu <- select(df, name)
+# vertex: student and course
+V_hudk_stu <- select(df5, name)
 ?gather
-course <- df %>% 
+course <- df5 %>% 
   gather(num, course_name, 2:6) 
 
 course <- course %>% 
@@ -224,30 +239,31 @@ V_course <- as.data.frame(V_course)
 
 V_hudk_stu$group <- "stu"
 V_course$group <- "course"
-
 names(V_hudk_stu) <- c("name", "group")
 names(V_course) <- c("name", "group")
 
+# final vertex: student&course
 V <- bind_rows(V_hudk_stu, V_course)
 
 
 
 # edge
-E <- df %>% 
+#gather: 
+E1 <- df4 %>% 
   gather(num, course_name, 2:6) 
   
-E <- E[!(is.na(E$course_name) | E$course_name==""), ]
-E$name <- as.factor(E$name)
-E$course_name <- as.factor(E$course_name)
-E <- select(E, -num)
+E1 <- E[!(is.na(E$course_name) | E$course_name==""), ]
+E1$name <- as.factor(E1$name)
+E1$course_name <- as.factor(E1$course_name)
+E2 <- select(E1, -num)
 
 V <- unique(V)
 V$group <- as.factor(V$group)
 V$name <- as.factor(V$name)
 
-g <- graph.data.frame(E, directed = FALSE, vertices = V)
+#igraph
+g <- graph.data.frame(E2, directed = FALSE, vertices = V)
 plot(g, layout = layout.fruchterman.reingold, vertex.color=V$group, edge.arrow.size=0,  vertex.label=NA, vertex.size = 5)
-?plot
 
 cen <- eigen_centrality(g, directed = FALSE, scale = TRUE, weights = NULL,
   options = arpack_defaults)
@@ -259,12 +275,45 @@ degree(g)
 ```{r}
 #create a matrix of student-course
 #add this so that it can be fillout
-df8$count <- 1
-df9 <- spread(df8, n, value, fill = 0) %>% as.matrix()
-class(df9)
-dim(df9)
+df6 <- E2
+df6$count <- 1
+df7 <- unique(df6)
+df8 <- spread(df7, course_name, count, fill = 0) %>% as.matrix()
+class(df8)
+dim(df8)
+```
+```{r}
+df9 <- df8
+row.names(df9) <- df8[ ,1]
+df10 <- df9[ ,-1]
+class(df10)
+class(df10) <- "numeric"
+df11 <- df10 %*% t(df10)
+
+library(igraph)
+g <- graph_from_adjacency_matrix(df11)
+plot(g, layout=layout.fruchterman.reingold, edge.arrow.size=0)
+```
+
+plot without hudk4050
+```{r}
+E3 <- filter(E2, course_name != "HUDK4050")
+df6 <- E3
+df6$count <- 1
+df7 <- unique(df6)
+df8 <- spread(df7, course_name, count, fill = 0) %>% as.matrix()
+df9 <- df8
+row.names(df9) <- df8[ ,1]
+df10 <- df9[ ,-1]
+class(df10)
+class(df10) <- "numeric"
+df11 <- df10 %*% t(df10)
+diag(df11) <- 0
+g <- graph_from_adjacency_matrix(df11)
+plot(g, layout=layout.fruchterman.reingold, edge.arrow.size=0, vertex.size = 5, vertex.label.front = 1)
 
 ```
+
  
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
 
