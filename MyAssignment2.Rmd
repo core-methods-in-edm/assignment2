@@ -102,17 +102,24 @@ n4_tran<-n3_tran
 noHUDK4050mat<-n4_tran-1
 diag(noHUDK4050mat)<-0
 class_net<-graph.adjacency(noHUDK4050mat, mode="undirected", diag=FALSE)
-plot(class_net, layout=layout_in_circle)
-
-#betweenness calculation without HUDK4050 connections
-B1<-betweenness(class_net, v = V(class_net), directed = FALSE, weights = NULL, normalized = FALSE)
 
 #eigen centrality without HUDK 4050 connections
 E1<-eigen_centrality(class_net, directed = FALSE, scale = TRUE, weights = NULL,
   options = arpack_defaults)
+E1<-as.data.frame(E1)
+
+#betweenness calculation without HUDK4050 connections
+B1<-betweenness(class_net, v = V(class_net), directed = FALSE, weights = NULL, normalized = FALSE)
 
 #degree without HUDK 4050 connections
 Deg1<-degree(class_net, v = V(class_net), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
+
+#graph the SNA similar to "small world" graphic with vertex based on centrality
+plot(class_net, layout=layout_in_circle, vertex.size = E1$vector*30)
+plot(class_net, layout=layout.fruchterman.reingold, vertex.size=E1$vector*20)
+
+##According to the eigenvector centrality, Xixuan Zao has the highest centrality and is thus, the most popular.
+
 
 ```
 
@@ -134,6 +141,8 @@ B2<-betweenness(class_net2, v = V(class_net2), directed = FALSE, weights = NULL,
 #eigen centrality WITH HUDK 4050 connections
 E2<-eigen_centrality(class_net2, directed = FALSE, scale = TRUE, weights = NULL,
   options = arpack_defaults)
+E2<-as.data.frame(E2)
+
 
 #degree wWITH HUDK 4050 connections
 Deg2<-degree(class_net2, v = V(class_net2), mode = c("all", "out", "in", "total"),loops = TRUE, normalized = FALSE)
