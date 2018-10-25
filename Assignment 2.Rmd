@@ -8,7 +8,11 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+
+D1 = read.csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
+
+
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -61,6 +65,7 @@ VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
 Now we have both a Vertex and Edge list it is time to plot our graph!
 
 ```{r}
+
 #Load the igraph package
 
 library(igraph)
@@ -80,15 +85,92 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
 ````
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+
+library(tidyr)
+library(dplyr)
+library(igraph)
+
+
+teachersSum = EDGE %>% group_by(from) %>% summarise(sum(count))
+names(teachersSum) = c("id","count")
+
+studentSum = EDGE %>% group_by(to) %>% summarise(sum(count))
+names(studentSum) = c("id","count")
+
+SUM = bind_rows(teachersSum, studentSum)
+VERTEX = full_join(VERTEX, SUM, by = "id")
+
+g = graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+plot(g,layout=layout.fruchterman.reingold, 
+     vertex.color=as.factor(VERTEX$gender))
+
+
+```
+
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+```{r}
+
+library(tidyr)
+library(dplyr)
+
+ourClass = read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+ourClass = tidyr::unite(ourClass, Name, "Q8", "Q9", sep = " ", remove = TRUE)
+
+ourClass = tidyr::gather(ourClass, question, course, "Q1","Q3","Q4","Q5","Q6","Q7", na.rm = TRUE, convert = FALSE)
+
+
+if (ourClass$course == "HUDK4050"){
+  ourClass$course = "HUDK 4050"
+}
+
+ourClass[ourClass[, "course"] == "HUDK4050", "course"] <- "HUDK 4050"
+
+ourClass = dplyr::filter(ourClass, course== "HUDK 4050")
+
+#removing the duplicate name
+ourClass = ourClass[-14, ]
+
+ourClass$Count = 1
+
+ourClass = tidyr::spread(ourClass, course, Count)
+
+row.names(ourClass) = ourClass$Name
+ourClass$Name = NULL
+
+ourClass = ifelse(is.na(ourClass), 0, 1)
+
+ourClass = as.matrix(ourClass)
+
+ourClass = ourClass %*% t(ourClass)
+diag(ourClass) = NA
+
+```
+#Graphing
+```{r}
+classGraph = graph.adjacency(ourClass, mode="undirected")
+
+plot(classGraph,layout=layout.fruchterman.reingold, vertex.size=10)
+
+```
+
+
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+degree(classGraph)
+betweenness(classGraph)
+```
 
