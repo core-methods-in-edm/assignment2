@@ -275,6 +275,8 @@ degree(g)
 ```{r}
 #create a matrix of student-course
 #add this so that it can be fillout
+library(dplyr)
+library(tidyr)
 df6 <- E2
 df6$count <- 1
 df7 <- unique(df6)
@@ -314,6 +316,26 @@ plot(g, layout=layout.fruchterman.reingold, edge.arrow.size=0, vertex.size = 5, 
 
 ```
 
+```{r}
+df_cluster <-df11
+df_cluster <- df_cluster[, -18]
+# install.packages("klaR")
+library(klaR)
+K <- kmodes(df_cluster, 6, iter.max = 10, weighted = FALSE)
+V_stu <- K[["cluster"]]
+
+# don't need to do this
+V_stu <- as.data.frame(V_stu)
+View(V_stu)
+V_stu$cluster <- df8[ ,1]
+colnames(V_stu) <- c("cluster", "name")
+
+net <- graph_from_adjacency_matrix(df11)
+set_vertex_attr(net, "type", index = V(net), as.factor(V$cluster))
+V(g2)$color<-K$cluster
+plot(g2, layout=layout.fruchterman.reingold, edge.arrow.size=0, vertex.size = 5, vertex.label.front = 1)
+
+```
  
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
 
