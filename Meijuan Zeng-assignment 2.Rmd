@@ -133,10 +133,15 @@ class_name <- c("Q1 : Q7")
 
 ```{r}
 #Gather name by the first and last names,all the classes into class_name, arrange their orders and remove the empty rows:
-d3 <- gather(d2, class, class_name, 2: 7, na.rm = TRUE) %>%  select(name, class_name)%>%arrange(name,class_name)%>%na.omit()%>%filter(class_name>0, class_name != "HUDK 4050")
+d3 <- gather(d2, class, class_name, 2: 7, na.rm = TRUE) %>%  select(name, class_name)%>%arrange(name,class_name)%>%na.omit()
 
 #Delete the unwanted rows: 
-d3 <- d3[-c(16:21, 114:119),]
+d3 <- d3[-c(22:27, 152:157),]
+
+#remove the spaces in class_name:
+d3$class_name <- gsub(' ', '', d3$class_name)
+d3 <- filter(d3, class_name > 0, class_name != "HUDK4050")
+
 ```
 
 ```{r}
@@ -157,14 +162,18 @@ diag(d6) <- NA
 ```{r}
 #create network
 library(igraph)
+library(klaR)
 g <- graph.adjacency(d6, mode = "undirected", weighted = TRUE)
-plot(g,layout = layout.fruchterman.reingold, edge.arrow.size = 0.5, vertex.label.size = 5)
-
-#centrality
-degree(g)    
-
+g <- simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
+#Use clustering on person-class matrix and show different colors on different groups which share the same classes 
+modes <- kmodes(d5, 8, iter.max = 10, weighted = FALSE)
+V(g)$color <- modes$cluster
+plot(g,layout=layout.fruchterman.reingold, vertex.size = 7)
 #betweeness centrality
 betweenness(g)
+degree(g)
+#show who is the most central
+max(betweenness(g))
 ```  
 
 
