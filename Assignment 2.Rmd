@@ -330,7 +330,6 @@ V_stu <- as.data.frame(V_stu)
 View(V_stu)
 V_stu$cluster <- df8[ ,1]
 colnames(V_stu) <- c("cluster", "name")
-
 net <- graph_from_adjacency_matrix(df11)
 set_vertex_attr(net, "type", index = V(net), as.factor(V$cluster))
 
@@ -338,6 +337,9 @@ set_vertex_attr(net, "type", index = V(net), as.factor(V$cluster))
 V(g2)$color<-K$cluster
 plot(g2, layout=layout.fruchterman.reingold, edge.arrow.size=0, vertex.size = 5, vertex.label.front = 1)
 
+#degree and betweeness
+degree(g2)
+betweenness(g2)
 ```
  
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
