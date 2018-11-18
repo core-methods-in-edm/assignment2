@@ -147,5 +147,7 @@ plot(t1)
 betweenness(t1)
 #Answer = E
 ```
-
+```{R}
+plot(g,layout=layout.fruchterman.reingold, vertex.size=6+((degree(g)-mean(degree(g)))^2)/(sd(degree(g)))^2,vertex.color=k$cluster)
+```
 
