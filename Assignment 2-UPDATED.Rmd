@@ -1,0 +1,252 @@
+# Assignment 2 - Social Network Analysis
+
+## Part I
+<!-- Start by installing the "igraph" package. Once you have installed igraph, load the package. -->
+
+
+```{r}
+## Download and install the package
+install.packages("igraph")
+
+## Load package
+library(igraph)
+```
+
+
+<!-- OTHER LIBRARIES -->
+
+```{r}
+library("colorspace", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("markdown", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("RColorBrewer", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("rmarkdown", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("tidyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("tidyselect", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+``` 
+
+<!-- Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise"). -->
+
+```{r}
+D1 <- data.frame(read.csv("discipline-data.csv"))
+```
+
+<!-- Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code: -->
+
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+<!-- igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major. -->
+
+<!-- So let's convert our data into an edge list! -->
+
+<!-- First we will isolate the variables that are of interest: tid and stid -->
+
+```{r}
+library(dplyr)
+
+D2 <- dplyr::select(D1, tid, stid)
+```
+
+Since our data represents every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
+
+```{r}
+
+EDGE <- dplyr::count(D2, tid, stid)
+
+names(EDGE) <- c("from", "to", "count")
+
+```
+
+EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
+
+```{r}
+
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+
+```
+
+Now we have both a Vertex and Edge list it is time to plot our graph!
+
+```{r}
+#Load the igraph package
+
+library(igraph)
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+````
+
+## Part II
+
+In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+
+```{r}
+#Count the number of times each unique student has had a referral
+studentDISCPL <- count(D2, "stid")
+
+#Count the number of times each unique teacher made a referral -->
+teacherDISCPL <- count(D2, "tid")
+
+#Combine the student and teacher discipline counts into one column -->
+  #First, ensure the columns have the same name -->
+  colnames(teacherDISCPL) <- c("id", "discipline_sum")
+  colnames(studentDISCPL) <- c("id", "discipline_sum")
+  
+  #Now, stack the columns -->
+  DISCIPLINE <- rbind(teacherDISCPL, studentDISCPL)
+```
+  
+<!-- NOW THAT THE DISCIPLINE COUNTS PER PERSON ARE SAVED, WE CAN PASS THIS TO VERTEX.SIZE -->
+<!-- (I am mltiplying by 2 because the dots were too small the first time) -->
+
+```{r}
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, vertex.size=2*DISCIPLINE$discipline_sum, edge.width=EDGE$count )
+
+```
+
+## Part III
+
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+<!-- FIRST, CREATE THE "PERSON_CLASS" DATAFRAME FROM THE CSV FILE -->
+<!-- THIS WILL BE CONVERTED INTO A MATRIX AT THE END USING "as.matrix" -->
+```{r}
+READ_DATA <- data.frame(read.csv("HUDK4050-2018-classes.csv"))
+```
+
+
+<!-- NOW, ISOLATE THE VARIABLES OF INTEREST: STUDENT (Q8 & Q9) AND CLASS (Q1-Q6) -->
+```{r}
+PERSON_CLASS_DF <- select(READ_DATA, Q8, Q9, Q1:Q6)
+```
+
+
+<!-- RENAME THE COLUMNS -->
+```{r}
+colnames(PERSON_CLASS_DF) <- c("first_name", "last_name","class1", "class2", "class3", "class4", "class5")
+```
+
+<!-- REMOVE THE UNNECESSARY ROWS -->
+<!-- I just noticed that Stephanie Yang reported twice, so I removed her first entry -->
+<!-- Also, removed the blank from row 39 -->
+```{r}
+PERSON_CLASS_DF <- PERSON_CLASS_DF[-c(1,2,3,39),]
+```
+
+<!-- WE WANT TO SEE HOW MANY TIMES A PARTICULAR CLASS IS SELECTED -->
+<!-- FIRST, WE'LL CREATE A STUDENT ID -->
+```{r}
+PERSON_CLASS_DF$id <- paste(PERSON_CLASS_DF$first_name,"-",PERSON_CLASS_DF$last_name)
+```
+
+#stack the classes and connect to id
+```{r}
+stackedClasses <- gather(PERSON_CLASS_DF, class, val, class1:class5)
+stackedClasses$class <- stackedClasses$val
+
+#REMOVE UNNCESSARY COLUMNS
+stackedClasses$val <- NULL
+stackedClasses$first_name <- NULL
+stackedClasses$last_name <- NULL
+```
+
+```{r}
+#IF CLASS==BLANK, REMOVE ROW
+stackedClasses <- stackedClasses[!(stackedClasses$class==""), ]
+```
+
+
+```{r}
+#NOW, WE HAVE MULTIPLE ROWS WHERE THE SAME CLASS IS TAKEN; COUNT UNIQUE CLASS OCCURENCES
+EDGE.HUDK4050 <- count(stackedClasses, "class")
+
+#EACH COUNT REPRESENTS A CONNECTION BETWEEN STUDENTS IN THE SAME CLASS
+names(EDGE.HUDK4050) <- c("class","connection_count")
+```
+
+
+#SEPARATE CLASSES FROM THE DATAFRAME
+```{r}
+V.CLASS <- select(stackedClasses, id, class)
+V.CLASS <- unique(V.CLASS)
+V.CLASS$group <- "class"
+
+V.STUDENT <- select(stackedClasses, id, class)
+V.STUDENT <- unique(V.STUDENT)
+V.STUDENT$group <- "student"
+```
+
+#NOW, CREATING A VERTEX DATAFRAME THAT INCLUDES THE STUDENT AND CLASSES
+```{r}
+VERTEX.HUDK4050 <- bind_rows(V.CLASS, V.STUDENT)
+```
+
+
+#NOW, CONVERT TO MATRIX
+```{r}
+matrix.VERTEX.HUDK4050 <- as.matrix(VERTEX.HUDK4050)
+matrix.EDGE.HUDK4050 <- as.matrix(EDGE.HUDK4050)
+```
+
+<!-- referencing graphing tips here: http://www.kateto.net/wp-content/uploads/2016/01/NetSciX_2016_Workshop.pdf -->
+
+head(matrix.EDGE.HUDK4050)
+head(matrix.VERTEX.HUDK4050)
+
+#not sure about how to make the graphing work :-( My attempts are below)
+
+<!-- matrixToGraph <- graph_from_adjacency_matrix(matrix.EDGE.HUDK4050, mode="directed", weighted = TRUE) -->
+```{r}
+matrixToGraph <- graph_from_incidence_matrix(matrix.EDGE.HUDK4050)
+```
+
+
+```{r}
+plot(matrixToGraph, edge.arrow.size=.2, edge.curved=0,
+vertex.color=V(matrixToGraph)$group, vertex.frame.color="#555555",
+vertex.label=V(matrixToGraph)$class, vertex.label.color="black",
+vertex.label.cex=.7)
+```
+
+
+<!-- table(V(matrixToGraph)$class) -->
+
+
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+Xinyi? Obsevation 87
