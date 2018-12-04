@@ -1,0 +1,105 @@
+
+
+
+
+##In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+library(igraph)
+d1 <- read.csv("discipline-data.csv")
+d1$stid <- as.factor(d1$stid)
+library(dplyr)
+d2 <- dplyr::select(d1, tid, stid)
+EDGE <- dplyr::count(d2, tid, stid)
+names(EDGE) <- c("from", "to", "count")
+```
+
+#count
+```{r}
+V.STD1 <- dplyr::count(d1, stid, s.major)
+V.STD1 <- unique(V.STD1)
+V.STD1$group <- "student"
+V.TCH1 <- dplyr::count(d1, tid, t.expertise)
+V.TCH1 <- unique(V.TCH1)
+V.TCH1$group <- "teacher"
+names(V.TCH1) <- c("id", "interest", "number", "group")
+names(V.STD1) <- c("id", "interest", "number", "group")
+VERTEX1 <- dplyr::bind_rows(V.TCH, V.STD)
+```
+```{r}
+library(igraph)
+g1 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
+plot(g,layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=as.factor(VERTEX1$group),edge.width=EDGE$count)
+```
+
+## Part III
+
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+library(dplyr)
+library(tidyr)
+D1 <- read.csv("HUDK4050-2018-classes.csv")
+D1 <- dplyr::filter(D1, Progress == 100)
+D1 <- tidyr::unite(D1, Name, `Q8`, `Q9`, sep = " ", remove = TRUE)
+D2 <- dplyr::select(D1, Name:Q7)
+D2 <- tidyr::gather(D2, Label, Course, `Q1`:`Q7`)
+D2$Course <- gsub(" ", "", D2$Course)
+D2 <- dplyr::filter(D2, Course !="HUDK4050")
+D2 <- count(D2, Name, Course)
+
+D3 <- filter(D2, D2$Course !="")
+## D2$count <- if_else(D2$Course=="",0,1)
+## D2$Course <- dplyr::filter(D2, Course != " ")
+D4 <- tidyr::spread(D3, Course, n)
+
+D4[is.na(D4)] <- 0
+## change column name
+row.names(D4) <- D4$Name
+D4$Name <- NULL
+
+```
+
+
+##
+```{r}
+## convert to matrix
+D5 <- as.matrix(D4)
+
+##
+D6 <- t(D5)
+colnames(D6) <- rownames(D4)
+
+
+##colnames(D5) <- D3$Course
+##D6 <- t(D5)
+##D5 <- t(D4)
+
+D7 <- D5 %*% D6
+diag(D7) <- 0
+
+
+```
+
+
+##graph
+```{r}
+library(igraph)
+g <- graph.adjacency(D7, mode="undirected")
+plot(g, layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold, vertex.size=3)
+
+
+degree(g)
+betweenness(g)
+```
+## K-modes
+```{r}
+D_3 <- spread(D3, Course, n)
+
+```
+
+
+
+
