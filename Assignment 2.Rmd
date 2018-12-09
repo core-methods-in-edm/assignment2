@@ -2,8 +2,16 @@
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+library(igraph)
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- read.csv(file=file.choose(),header=T)
+D1<-as.data.frame(D1)
+D1
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -52,7 +60,7 @@ V.STD$group <- "student"
 #Make sure that the student and teacher data frames have the same variables names
 names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
-
+V.STD$id<-as.factor(V.STD$id)
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
 
@@ -91,4 +99,44 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+D<-read.csv("HUDK4050-2018-classes.csv")
+library(tidyr)
+library(dplyr)
+tidyd<-D[,15:22]
+tidyd<-tidyd[-1:-2,]
+tidyd<-filter(tidyd,row.names(tidyd)!=39)
+tidyd<-tidyd[-8]
+tidyd<-transmute(tidyd,name=paste(tidyd$Q8,tidyd$Q9,sep = " "),Q1=Q1,Q2=Q3,Q3=Q4,Q4=Q5,Q5=Q6)
+tidyd<-as.data.frame(apply(tidyd,2,as.character),stringsAsFactors = FALSE)
+tidyd$Q1<-gsub(" ","",tidyd$Q1)
+tidyd$Q2<-gsub(" ","",tidyd$Q2)
+tidyd$Q3<-gsub(" ","",tidyd$Q3)
+tidyd$Q4<-gsub(" ","",tidyd$Q4)
+tidyd$Q5<-gsub(" ","",tidyd$Q5)
+#data have been cleaned up
+dlong<-gather(tidyd,q,course,Q1:Q5)
+dlong$score<-c(rep.int(1,200))
+dlong<-dlong[-2]
+dwide<-unique(filter(dlong,course!=""))%>%spread(course,score,fill = 0)
+row.names(dwide)<-dwide$name
+#person-class matrix
+dm<-as.matrix(dwide[2:57])
+#person-person matrix
+ppm<-dm%*%t(dm)
+diag(ppm) <- NA
+library(igraph)
+g<-graph.adjacency(ppm, weighted=T,mode="undirected")
+g<-simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
+V(g)$label.color <- rgb(0, 0, .2, .8)
+V(g)$frame.color <- "grey5"
+E(g)$width<-E(g)$weight
+E(g)$color <- E(g)$weight
+plot(g,layout=layout.fruchterman.reingold)
+bc<-betweenness(g, v = V(g), directed = FALSE,nobigint = TRUE, normalized = FALSE)
+#The most central person in the network is
+names(bc[max(bc)])
+deg<-degree(g, v = V(g), normalized = FALSE)
+```
 
