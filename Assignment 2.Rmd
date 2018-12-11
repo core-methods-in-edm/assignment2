@@ -2,8 +2,14 @@
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+library(igraph)
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1<-read.csv("discipline-data.csv")
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -85,10 +91,51 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+#VERTEX:student:number of actions
+STD.N<-dplyr::count(D2, stid)
+STD.N$group <- "student"
+#EDGE:teacher,number of actions
+TCH.N<-dplyr::count(D2, tid)
+TCH.N$group <- "teacher"
+names(STD.N) <- c("id", "times", "group")
+names(TCH.N) <- c("id", "times", "group")
+VERTEX0 <-merge(x=TCH.N,y=VERTEX,by="id")
+VERTEX2 <-merge(x=STD.N,y=VERTEX,by="id")
+VERTEX2$id <- as.factor(VERTEX2$id)
+#creat the plot  上图中学生被叫次数多，则圆圈大。
+VERTEX22 <- dplyr::bind_rows(VERTEX0, VERTEX2)
+g2<- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+plot(g2,layout=layout.fruchterman.reingold, vertex.size=VERTEX22$times,vertex.color=VERTEX$gender, edge.width=EDGE$count)
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+NET<-data.frame(read.csv("HUDK4050-2018-classes.csv"))
+HUDK<-NET[15:22]
+HUDK<- HUDK[-c(1,2,39),-c(8)]
+library(tidyr)
+HUDK<-tidyr::unite(HUDK, "Name", Q8, Q9)
+names(HUDK) = c("name","class1","class2","class3","class4","class5")
+HUDK1= gather(HUDK,...=2:6) 
+HUDK1=HUDK1[,-2]
+colnames(HUDK1)[2]<-"course"
+HUDK2=dplyr::filter(HUDK1,course>0,course!="HUDK 4050",course!="HUDK4050")
+HUDK2$count<-1
+#creat the matrix
+d3=spread(HUDK2,course,count,fill=0)
+row.names(d3)<-d3$name
+d3$name<-NULL
+d4<-as.matrix(d3)
+d5<- d4%*%t(d4)
+diag(d5)=0
+library(igraph)
+g<-graph.adjacency(d5,mode="undirected",weighted = TRUE,diag=FALSE,add.colnames = NULL,add.rownames = NA)
+degree(g)
+betweenness(g)
 
+```
