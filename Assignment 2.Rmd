@@ -122,5 +122,4 @@ m1 <- as.matrix(D5)
 m2 <- m1 %*% t(m1)
 diag(m2) <-0
 plot(graph_from_adjacency_matrix(m2, mode="undirected", weighted=NULL, diag =TRUE), layout=layout.fruchterman.reingold, vertex.color=fit$cluster)
-
 ```
