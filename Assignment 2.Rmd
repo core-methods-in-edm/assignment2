@@ -8,10 +8,16 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+
+install.packages("igraph")
+library(igraph)
+D1 <- read.csv("discipline-data.csv")
+
 D1$stid <- as.factor(D1$stid)
+
 ```
 
-igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
+igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertex list contains all the characteristics of those vertices, in our case gender and major.
 
 So let's convert our data into an edge list!
 
@@ -23,7 +29,7 @@ library(dplyr)
 D2 <- dplyr::select(D1, tid, stid)
 ```
 
-Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
+Since our data represents every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
@@ -86,9 +92,85 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+V.STD2 <- dplyr::select(D1, stid, s.major)
+V.STD2 <- dplyr::count(V.STD2, stid, s.major)
+V.STD2$group <- "student"
+
+V.TCH2 <- dplyr::select(D1, tid, t.expertise)
+V.TCH2 <- dplyr::count(V.TCH2, tid, t.expertise)
+V.TCH2$group <- "teacher"
+
+names(V.STD2) <- c("id", "topic", "count", "group")
+names(V.TCH2) <- c("id", "topic", "count", "group")
+
+
+VERTEX2 <- dplyr::bind_rows(V.STD2, V.TCH2)
+
+g2 <- graph.data.frame(EDGE, directed = TRUE, vertices = VERTEX2)
+
+plot(g2, layout=layout.fruchterman.reingold, vertex.size = VERTEX2$count, edge.width = EDGE$count)
+  
+```
+
+
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+
+library(tidyr)
+Class <- read.csv("HUDK4050-2018-classes.csv")
+
+D3 <- Class
+
+D3 <- D3 %>% 
+  select(Q8, Q9, Q1, Q3, Q4, Q4) %>%
+  unite(student, Q8, Q9, sep = ' ') 
+  
+D3 <- D3[-c(1,2,39),]
+
+```
+
+Fixed some formatting issues, now will standardize the names
+
+```{r}
+library(dplyr)
+
+D3$Q1 <- as.character(D3$Q1)
+D3$Q3 <- as.character(D3$Q3)
+D3$Q4 <- as.character(D3$Q4)
+
+
+
+D3[D3 == "HUDK4050"] <- "HUDK 4050"
+D3[D3 == "HUDK5035"] <- "HUDK 5035"
+D3[D3 == "HUDK4011"] <- "HUDK 4011"
+D3[D3 == "HUDM4125"] <- "HUDM 4125"
+D3[D3 == "MSTU5003"] <- "MSTU 5003"
+D3[D3 == "MSTU4083"] <- "MSTU 4083"
+D3[D3 == "MSTU4039"] <- "MSTU 4039"
+
+
+D4 <- D3 %>%
+  gather(key = var1, value = var2,...=2:5, na.rm = TRUE) %>%
+  count(student, var2) %>%
+  filter(var2 != ""&var2!="HUDK 4050") %>%
+  spread(key = var2, value = n)
+
+D4[is.na(D4)] <- 0
+
+matrix <- as.matrix(D4[-1])
+row.names(matrix) <- D7$student
+
+
+
+
+
+
+
+```
 
