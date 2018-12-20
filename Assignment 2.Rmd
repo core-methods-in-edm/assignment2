@@ -3,6 +3,7 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
@@ -80,7 +81,7 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-````
+```
 
 ## Part II
 
@@ -88,7 +89,187 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 
 ## Part III
 
-Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+Now practice with data from our class. Please create a person-network with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. Who is the most central person in the network?
 
+Loading stuff
+
+```{r}
+
+library(igraph)
+library(dplyr)
+library(tidyr)
+library(igraph)
+```
+
+Getting the data and cleaning up stuff
+
+```{r}
+
+CLS1 = read.csv("HUDK4050-2018-classes.csv", header = TRUE)
+
+
+CLS1[1:14] <- NULL
+CLS1[8] <- NULL
+CLS1 <- CLS1[-c(2), ]
+
+
+
+CLSnames <- CLS1[1,1:7]
+T1 <- as.data.frame(t(CLSnames))
+CLSnames <- gsub(" ", "", T1$`1`)
+
+colnames(CLS1) <- CLSnames
+
+CLS1 <- CLS1[-c(1), ]
+CLS1 <- CLS1[-c(1), ]
+CLS1 <- CLS1[-c(36), ]
+
+
+CLS2 <- as.data.frame(lapply(CLS1, gsub, pattern=" ", replacement=""))
+CLS2 <- as.data.frame(lapply(CLS2, gsub, pattern="HUDK4050", replacement=""))
+
+
+CLS2 <- unite(CLS2, "StudName", c("FirstName", "LastName"), sep = " ")
+
+
+
+```
+
+Setting up Matrix and stuff
+
+``` {r}
+
+CLS3 <- gather(CLS2, ClassTaken, "ClassNames", 2:6)
+CLS31 <- CLS3[!(is.na(CLS3$ClassNames) | CLS3$ClassNames==""), ]
+CLS31$ClassTaken <- 1
+
+
+
+CLS4 <- spread(CLS31, ClassNames, ClassTaken, fill = 0)
+
+rownames(CLS4) <- CLS4$StudName
+CLS4 <- CLS4[ ,-c(1) ]
+
+CLS5 <- data.matrix(CLS4, rownames.force = NA)
+
+```
+
+
+Transpose Matrix and multiiplying it
+
+
+```{r}
+
+
+CLS5 <- data.matrix(CLS4, rownames.force = NA)
+
+CLS5t <- t(CLS5)
+
+CLS6 <- CLS5%*%CLS5t
+
+CLS_Edge <- CLS31[,-c(2)]
+
+CLS_Adj <- get.adjacency(graph.edgelist(as.matrix(CLS_Edge), directed=FALSE))
+
+CLS6vertex <- as.factor(CLS3$StudName)
+
+```
+
+
+```{r}
+g <- graph_from_adjacency_matrix(CLS6, mode = c("undirected"), diag = FALSE)
+graph_from_adjacency_matrix
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+plot(g)
+set.seed(3952)
+plot(g,layout=layout_with_fr, vertex.label.cex=.7, edge.arrow.size=.2, vertex.size=4, width=10 )
+
+
+plot(g,layout=layout.kamada.kawai)
+
+
+V(g)$label.cex <- 2.2 * V(g)$degree / max(V(g)$degree)+ .2
+V(g)$label.color <- rgb(0, 0, .2, .8)
+V(g)$frame.color <- NA
+egam <- (log(E(g))+.4) / max(log(E(g))+.4)
+ E(g)$color <- rgb(.5, .5, 0, egam)
+ E(g)$width <- egam
+ # plot the graph in layout1
+ plot(g)
+
+```
+
+
+V(g)$label.cex <- 2.2 * V(g)$degree / max(V(g)$degree)+ .2
+V(g)$label.color <- rgb(0, 0, .2, .8)
+V(g)$frame.color <- NA
+egam <- (log(E(g))+.4) / max(log(E(g))+.4)
+ E(g)$color <- rgb(.5, .5, 0, egam)
+ E(g)$width <- egam
+ # plot the graph in layout1
+ plot(g)
+
+
+```{r}
+
+install.packages(klaR)
+install.packages("klaR", lib="/my/own/R-packages/")
+
+library(klaR)
+
+CLS_CLuster <- kmodes(CLS5, 4, iter.max=10, weighted=FALSE)
+
+CLS_NamesCluster1 <- as.data.frame(CLS2$StudName)
+
+CLS_NamesCluster1$Cluster <- CLS_CLuster$cluster
+
+````
+
+
+```{r}
+
+CLS_EDGE <- dplyr::count(CLS31, StudName, ClassNames)
+
+names(CLS_EDGE) <- c("to", "from", "count")
+
+CLS6vertex$degree <- degree(g, v = V(g), mode = c("all", "out", "in", "total"),
+  loops = TRUE, normalized = FALSE)
+
+
+CLS6vertex$degree10 <- (CLS6vertex$degree*10)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.size=(CLS6vertex$degree*3), edge.width=CLS_EDGE$count)
+````
+
+
+CLS_NamesInClusters <- merge()
+
+
+CLSnames <-c(1,2,3)
+CLS_CLuster <-c(100,200,300)
+x_name <- "cond"
+y_name <- "rating"
+
+require(reshape2)
+CLS_NamesInClusters <- melt(data.frame(CLSnames,CLS_CLuster))
+colnames(CLS_NamesInClusters) <- c("Names", "ClassCluster")
+print(CLS_NamesInClusters)
+
+
+```{r}
+estimate_betweenness(g, vids = V(g), directed = TRUE, cutoff = 100,
+  weights = NULL, nobigint = TRUE)
+
+
+closeness(g, vids = V(g), mode = c("out", "in", "all", "total"),
+  weights = NULL, normalized = FALSE)
+
+````
+
+
+Elliot Hu-Au is the most central.
