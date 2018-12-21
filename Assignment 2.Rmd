@@ -1,4 +1,6 @@
 # Assignment 2 - Social Network Analysis
+# Name: Yuewen Lin
+# UNI: yl3881
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
@@ -75,7 +77,7 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.color = VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
@@ -85,10 +87,91 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+student_count <- dplyr::count(D2, stid)
+
+names(student_count) <- c("student", "count")
+
+teacher_count <- dplyr::count(D2, tid)
+
+names(teacher_count) <- c("teacher", "count")
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count, vertex.size=)
+
+
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+library(dplyr)
+library(tidyr)
+library(igraph)
+
+#laoding data
+class<-read.csv("HUDK4050-2018-classes.csv", header=TRUE, sep = ",")
+
+#removing odd rows
+class2<-class[-1:-2,]
+class2<-class2[-37,]
+
+#keeping variables
+class2<-select(class2,15:21)
+
+#gathering classes
+class3<-gather(class2,"class","name",3:7)
+
+#forming an unique student name
+class3$student<-paste(class3[,1],class3[,2])
+
+#removing empty classes
+class4<-class3[class3$name!="",]
+
+#keeping variables
+class4<-select(class4,4:5)
+
+#re-ordering columns, student first
+class4 <- class4[c(2,1)]
+
+#there are repeated courses written differently, thus I'm making them unique
+class4$name <- gsub(" ", "", class4$name)
+
+#since one student did it twice
+class5<-unique(class4)
+
+#creating a counter
+class5$counter<-1
+
+#making data frame person to person
+class5<-spread(class5,2,3,fill = 0)
+
+#removing student name
+class6<-select(class5,-1)
+
+#adding student name inner table
+row.names(class6) <-class5[,1]
+
+# as matrix
+## person-class
+p.c<-as.matrix(class6)
+
+## person-person
+p.p<-p.c %*% t(p.c)
+
+## graph
+g2 <- graph_from_adjacency_matrix(p.p, mode = c("undirected"), weighted = NULL, diag = FALSE,
+  add.colnames = NULL, add.rownames = NA)
+plot(g2)
+
+#betweenness
+
+degree(g2)  #degree
+betweenness(g2, v = V(g2), directed = TRUE, weights = NULL,nobigint = TRUE, normalized = FALSE)
+
+#Xixuan Zhao has the greatest number of links and nodes with other students in the class, becoming him Xixuan the most central person in the class. 
+
+```
 
