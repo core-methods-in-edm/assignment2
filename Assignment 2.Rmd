@@ -8,7 +8,11 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1<-data.frame(discipline.data)
+D1
+
 D1$stid <- as.factor(D1$stid)
+D1
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -21,15 +25,19 @@ First we will isolate the variables that are of interest: tid and stid
 library(dplyr)
 
 D2 <- select(D1, tid, stid)
+D2
 ```
 
-Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
+Since our data represents every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
-
+D2$stid <- as.character(D2$stid)
+D2$tid<-as.character(D2$tid)
+D2
 EDGE <- count(D2, tid, stid)
 
 names(EDGE) <- c("from", "to", "count")
+EDGE
 
 ```
 
@@ -55,6 +63,7 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
+VERTEX
 
 ```
 
@@ -81,17 +90,64 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
-In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have received, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+
+library(igraph)
+#set edge
+
+edge1 <- count(D2, stid, tid)
+names(edge1) <- c("receive", "from", "counts")
+edge1
 
 
+
+#First we will separate the teachers from our original data frame
+TCH <- select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+TCH <- unique(TCH)
+#Add a variable that describes that they are teachers
+TCH$group <- "teacher"
+
+#Now repeat this process for the students
+STD <- select(D1, stid, s.gender, s.major)
+STD <- unique(STD)
+STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(TCH) <- c("id", "gender", "topic", "group")
+names(STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX2 <- bind_rows(TCH, STD)
+VERTEX2
+g <- graph.data.frame(edge1, directed=TRUE, vertices=VERTEX2)
+plot(g, layout=layout.circle,  vertex.color=VERTEX2$gender, edge.width=edge1$counts)
+
+
+
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+```{r}
+###clean data
+### keep course number in the same format
+### combine first name &last name
+###keep names, course numbers (each person has several courses in each row)
+###set edge(name)
+####nodes as course numbers
+
+
+
+
+```
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
