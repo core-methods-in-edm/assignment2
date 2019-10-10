@@ -158,8 +158,8 @@ Once you have done this, also [look up](http://igraph.org/r/) how to generate th
 ```{r}
 
 # create network metrics includes name, degree and betweenness
-networkMetrics <- personClass %>% mutate(degree = degree(g, v = V(g))) %>%
-  mutate(betweenness = betweenness(g, v = V(g))) %>%
+networkMetrics <- personClass %>% mutate(degree = degree(g, v=V(g))) %>%
+  mutate(betweenness = betweenness(g, v=V(g))) %>%
   select(name, degree, betweenness)
 networkMetrics
 
