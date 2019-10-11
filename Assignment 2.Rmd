@@ -8,7 +8,12 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
-D1$stid <- as.factor(D1$stid)
+library(igraph)
+setwd("C:/Users/Leonardo/Documents/tmp/assignment2")
+D1 <- read.csv("~/tmp/assignment2/discipline-data.csv", stringsAsFactors=FALSE)
+View(D1)  #lets you view the data
+D1$stid <- as.factor(D1$stid) # stores student ID as a factor, since igraph works only with factor data
+D1$tid <- as.factor(D1$tid)   # stores teacher ID as a factor, since igraph work only with factor data
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -19,18 +24,21 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
-
-D2 <- select(D1, tid, stid)
+library(tidyr)
+D2 <- D1%>%
+  select(tid, stid) # stores only teacher ID and student ID
+View(D2)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
-EDGE <- count(D2, tid, stid)
+EDGE <- D2%>%
+  count(tid, stid)
 
 names(EDGE) <- c("from", "to", "count")
-
+View(EDGE)
 ```
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
@@ -38,14 +46,17 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 ```{r}
 
 #First we will separate the teachers from our original data frame
-V.TCH <- select(D1, tid, t.gender, t.expertise)
+V.TCH <- D1%>%
+  select(tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
-V.TCH <- unique(V.TCH)
+V.TCH <- V.TCH%>%
+  unique()
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
 
 #Now repeat this process for the students
-V.STD <- select(D1, stid, s.gender, s.major)
+V.STD <- D1%>%
+  select(stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
 
@@ -54,8 +65,9 @@ names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
-VERTEX <- bind_rows(V.TCH, V.STD)
+VERTEX <- bind_rows(V.TCH, V.STD)     #ask about the difference between rbind and bind_rows
 
+View(VERTEX)
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
@@ -75,26 +87,161 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+VERTEX<-VERTEX%>%
+  mutate(
+    gen.color=as.factor(
+      ifelse(gender=="female","blue","red"))
+    )              
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gen.color)
+
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gen.color, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+student magnitudes: # of disciplinary actions they have received
+
+Teacher magnitudes: # of disciplinary actions they have given
+
+you can use "EDGE" to get the magnitude of the teacher and student vertices, but then what?
+
+synthesize into EDGE2
+
+
+```{r}
+
+TMAG <- EDGE%>%
+  group_by(from)%>%
+  summarize(actions=sum(count))
+smag <- EDGE%>%
+  group_by(to)%>%
+  summarize(actions=sum(count))
+
+names(TMAG)<-c("ID", "actions")
+names(smag)<-c("ID", "actions")
+
+
+EDGE2 <- bind_rows(TMAG,smag)       #creates a single DF of student and teacher total behaviors
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)     #generates the list plot attributes
+
+V(g)$size<-EDGE2$actions*2     #gives the attribute of number of actions to the size of each node
+
+VERTEX<-VERTEX%>%                 #sets the gender
+  mutate(
+    gen.color=as.factor(
+      ifelse(gender=="female","blue","red"))
+    )              
+
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gen.color)     #plots g, the network data
+
+
+```
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
+
+```{r}
+library(igraph)
+library(tidyr)
+library(dplyr)
+
+cd<-getwd()
+setwd(cd)
+
+cdf <- read.csv("~/tmp/assignment2/hudk4050-classes.csv", stringsAsFactors=FALSE, na.strings = c("", NA))
+
+cdf$Name<-paste(cdf$First.Name, cdf$Last.Name, sep = " ")       #pastes names together for easy use
+
+cdf2<-cdf%>%                                                    #creates a new DF with desired date
+  gather(key = "Class", value = "ClassX", 3:8, na.rm=TRUE)%>%   #combines all classes into a column
+  select(Name, Class=ClassX)%>%                                 #selects only the classes and user names
+  mutate(Present=1) %>% #attaches a value to a student being in a class
+  filter(Name != "ZIMO CHEN")
+#clean up data using gsub
+#keep data in cdf2
+
+cleaner <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = " ",replacement = "", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2, FUN=cleaner), stringsAsFactors = FALSE)
+cleaner1 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "GR",replacement = "", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner1), stringsAsFactors = FALSE)
+cleaner2 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "\\-",replacement = "", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner2), stringsAsFactors = FALSE)
+
+cleaner3 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "IFSF4090002",replacement = "ITSF4090", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner3), stringsAsFactors = FALSE)
+# turn G5067 and G5072 into QMSS6067 etc b4 removing G
+cleaner4 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "G5067",replacement = "QMSS5067", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner4), stringsAsFactors = FALSE)
+
+cleaner5 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "G5072",replacement = "QMSS5072", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner5), stringsAsFactors = FALSE)
+
+cleaner6 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "G",replacement = "", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner6), stringsAsFactors = FALSE)
+
+cdf3<- cdf2a%>%                                                  #creates adjacency matrix from cdf2
+  spread(key = "Class", value = "Present", 0) %>%
+  select(-HUDK4050)
+rownames(cdf3)<-cdf3$Name
+cdf4<-cdf3%>%select(-Name)
+cdf5<-sapply(X=cdf4, FUN=as.numeric)
+st2st<-as.matrix(cdf5)%*%t(as.matrix(cdf5))
+colnames(st2st)<-rownames(cdf4)
+rownames(st2st)<-rownames(cdf4)
+g2<- graph_from_adjacency_matrix(st2st, mode = "undirected", diag = FALSE, add.rownames = TRUE, weighted = TRUE)
+colnames(cdf4)
+
+plot(g2)
+betweenness(g2)[which(betweenness(g2)==max(betweenness(g2)))]
+degree(g2)[which(degree(g2)==max(degree(g2)))]
+
+# Yujun Zhang is the most central person in the class; they have both the highest degree and betweenness centrality
+
+```
+
 
 ### To Submit Your Assignment
 
-Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
+Please submit your assignment by first "knitting" your RMarkdown document into an html file and then commit, push and pull request both the RMarkdown file and the html file.
