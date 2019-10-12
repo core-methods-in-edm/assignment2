@@ -8,6 +8,7 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1 <- read.csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -114,15 +115,16 @@ library(tidyr)
 class <- tidyr::unite(class, "student", 1:2, sep = " ")
 class <- tidyr::gather(class, "order", "name",2:7)
 class <- class[, -2]
-b = which(class$name == "")
-class = class[-b,]
+class <- filter(class, !class$name == "")
 class$name <- gsub(" |-", "", class$name)
 class$count <- 1
 class <- tidyr::spread(class, name, count, fill = 0)
-rownames(class) <- class$student
-class <- class[,-1]
-t1 <- t(class)
-t2 <- as.matrix(class)
+
+pn <- class
+rownames(pn) <- class$student
+pn <- pn[,-1]
+t1 <- t(pn)
+t2 <- as.matrix(pn)
 network <- t2 %*% t1
 diag(network) <- NA
 ```
@@ -130,6 +132,15 @@ diag(network) <- NA
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+library(igraph)
+g2 <- graph_from_adjacency_matrix(network)
+plot(g2,layout=layout.fruchterman.reingold, vertex.size = 4, vertex.label.dist = 0.4, vertex.label.color = "black", edge.arrow.size = 0.4, edge.arrow.width = 0.4)
+
+
+centr_betw(g2, directed = TRUE, nobigint = TRUE, normalized = TRUE)
+
+```
 
 
 ### To Submit Your Assignment
