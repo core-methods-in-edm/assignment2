@@ -75,25 +75,62 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+VERTEX$gender <- as.factor(VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.color = VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+stu <- EDGE %>% group_by(to) %>% summarize(sum(count))
+tea <- EDGE %>% group_by(from)%>% summarize(sum(count))
+names(stu) <- c("id", "counts")
+names(tea) <- c("id", "counts")
+VERTEX1 <- bind_rows(stu, tea)
 
+g1 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
+plot(g1,layout=layout.fruchterman.reingold, vertex.size = VERTEX1$counts)
+
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+```{r}
+class <- read.csv("hudk4050-classes.csv")
+class <- select(class, Q8, Q9, Q1, Q3, Q4, Q5, Q6, Q7)
+names(class) <- c("First Name","Last Name", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6")
+class <- class[-c(1,2,36),]
+library(dplyr)
+library(tidyr)
+class <- tidyr::unite(class, "student", 1:2, sep = " ")
+class <- tidyr::gather(class, "order", "name",2:7)
+class <- class[, -2]
+b = which(class$name == "")
+class = class[-b,]
+class$name <- gsub(" |-", "", class$name)
+class$count <- 1
+class <- tidyr::spread(class, name, count, fill = 0)
+rownames(class) <- class$student
+class <- class[,-1]
+t1 <- t(class)
+t2 <- as.matrix(class)
+network <- t2 %*% t1
+diag(network) <- NA
+```
+
+
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+
 
 ### To Submit Your Assignment
 
