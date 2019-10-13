@@ -2,8 +2,13 @@
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
-
+```{r}
+install.packages("igraph")
+```
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- read.csv("discipline-data.csv")
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -81,11 +86,22 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+E.STD <- EDGE %>% group_by(to) %>% summarise(sum(count))
+E.TCH <- EDGE %>% group_by(from) %>% summarise(sum(count))
+names(E.STD) <- c("id","count")
+names(E.TCH) <- c("id","count")
+vertex <- bind_rows(E.STD, E.TCH)
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+plot(g,layout=layout.fruchterman.reingold, vertex.size=VERTEX$count, edge.width=EDGE$count)
+
+```
 
 
 
@@ -93,7 +109,59 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+```{r}
+library(tidyr)
+library(igraph)
+library(dplyr)
+
+raw_data1 <- read.csv("hudk4050-classes.csv")
+DF <- select(raw_data, Q10, Q1:Q7) #select useful column 
+DF <- DF[-c(1,2,36),]  #delet first 2 rows and a row contains incomplete info
+
+#DF <- DF[order(DF$Q10),]
+DF$count <-1
+
+DF <- DF %>% gather(key = class, value = course_name, Q1, Q3, Q4, Q5, Q6, Q7)
+DF <- na.omit(DF)
+
+DF <-DF %>% filter(course_name!= "")
+DF <-DF %>% filter(course_name!= "HUDK4050")
+DF <- DF[,-3]  #remove column class
+DF$course_name <- gsub(pattern = " ",replacement = "", x = DF$course_name)  #eliminate space between class name
+
+DF_sp <- DF %>% spread(key = course_name, value = count, fill = 0)
+#DF_sp <- DF_sp [,-c(2,3)]
+
+person_class_DF <- DF_sp %>% select(-Q10)  #remove Q10(UNI)
+person_class_matirx <- as.matrix(person_class_DF)  
+
+class_person_matrix <- t(person_class_DF)
+
+person_person_matrix <- person_class_matirx %*% class_person_matrix
+
+rownames(person_person_matrix) <- DF_sp$Q10 #put Q10(UNI) back as row name for clarity
+colnames(person_person_matrix) <- DF_sp$Q10 #put Q10(UNI) back as column name for clarity
+
+
+diag(x = person_person_matrix) <- NA 
+person_person_data <- graph_from_adjacency_matrix(person_person_matrix, mode = "undirected")
+
+plot.igraph(person_person_data,
+     layout = layout.fruchterman.reingold,
+     vertex.size = 10,
+     vertex.label.cex = 0.4)
+```
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+#betweenness Centrality
+betweeness_centrality <- betweenness(person_person_data)
+betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
+
+#degree
+degrees <- degree(person_person_data)
+degrees[degrees == max(degrees)]
+```
+
 
 ### To Submit Your Assignment
 
