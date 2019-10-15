@@ -1,3 +1,9 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
 # Assignment 2 - Social Network Analysis
 
 ## Part I
@@ -8,8 +14,8 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
-install.packages("igraph")
 library(igraph)
+library(readr)
 D1 <- data.frame(read_csv("discipline-data.csv"), header = TRUE)
 D1$stid <- as.factor(D1$stid)
 ```
@@ -118,6 +124,7 @@ Now practice with data from our class. Please create a **person-network** with t
 
 ```{r}
 library(tidyr)
+library(readr)
 hudk4050_classes <- read_csv("hudk4050-classes.csv")
 
 #Select the variables needed, delete the first two rows, and rename the variables
@@ -142,6 +149,7 @@ df3$class <- NULL
 
 #Spread the class numbers into their own columns and assign "0" to the NAs.
 df4 <- spread(df3, "number", "enrolled", is.na(0))
+row.names(df4) <-df4$id
 df4$id <- NULL
 
 #Create a matrix from df4, and multiply it by its transpose 
@@ -152,7 +160,7 @@ my_matrix <- m %*% t(m)
 g3 <- graph_from_adjacency_matrix(my_matrix, mode = c("undirected"), weighted = TRUE, diag = FALSE)
 plot(g3, layout=layout_on_grid, vertex.size = 3, vertex.label = NA, vertex.color = "black", edge.width = .2)
 
-#Since everyone is taking HUDK4050, we can remove it to make the graph more informative. 
+#Since everyone is taking HUDK4050, I removed it to make the graph more informative. 
 df4$"4050" <- NULL
 
 m <- data.matrix(df4)
@@ -167,10 +175,11 @@ plot(g3, layout=layout_on_grid, vertex.size = 3, vertex.label = NA, vertex.color
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 ```{r}
-View(betweenness(g3, directed=T, weights=NA))
-View(degree(g3, mode="in"))
+centr_betw(g3)
 
-#47, or yz3679, has the highest betweeness centrality.
+centr_degree(g3)
+
+#The 47th row, yz3679 (Yujun Zhang), is the most central person
 ```
 
 
