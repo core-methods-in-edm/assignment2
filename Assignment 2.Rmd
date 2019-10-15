@@ -150,6 +150,8 @@ df3$class <- NULL
 #Spread the class numbers into their own columns and assign "0" to the NAs.
 df4 <- spread(df3, "number", "enrolled", is.na(0))
 row.names(df4) <-df4$id
+
+#Remove the id column
 df4$id <- NULL
 
 #Create a matrix from df4, and multiply it by its transpose 
