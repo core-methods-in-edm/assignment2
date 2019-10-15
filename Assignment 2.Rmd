@@ -134,7 +134,7 @@ H5 = as.matrix(H4[2:50])
 row.names(H5) = H4$H4.Student_Name
 H6 <- H5 %*% t(H5)
 g <- graph.adjacency(H6, mode = "undirected")
-plot(g, layout = layout.fruchterman.reingold,vertex.size=10)
+plot(g, layout = layout.fruchterman.reingold,vertex.size=15)
 ```
 
 
