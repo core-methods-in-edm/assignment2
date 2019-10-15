@@ -8,10 +8,14 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+library(igraph)
+D1<-read.csv("discipline-data.csv",header=TRUE)
 D1$stid <- as.factor(D1$stid)
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
+
+#edge list from A to B;from A to c #vertex list, ABC
 
 So let's convert our data into an edge list!
 
@@ -81,11 +85,34 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+#sizes the student vertices the number of disciplinary actions  recieved
+EDGE
+VERTEX_T<-EDGE %>%
+  group_by(from) %>%
+  summarize(sum(count))
+
+VERTEX_S<-EDGE %>%
+  group_by(to) %>%
+  summarize(sum(count))
+
+names(VERTEX_T)<-c("id","count")
+names(VERTEX_S)<-c("id","count")
+VERTEX_total<-bind_rows(VERTEX_T,VERTEX_S)
+VERTEX2<-merge(VERTEX,VERTEX_total,by="id")
+
+g2<- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX2)
+#sizes the teacher vertices the number of disciplinary actions  given
+
+plot(g2,layout=layout.fruchterman.reingold,vertex.color=VERTEX2$gender,vertex.size=VERTEX2$count)
+
+```
 
 
 
@@ -94,6 +121,49 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+library(tidyr)
+library(stringr)
+df<-read.csv("hudk4050-classes.csv")
+
+head(df)
+str(df) # all variables are factors
+df<-lapply(df,str_replace," ","")
+df<-lapply(df,str_replace,"-","")
+df<-lapply(df,toupper)
+df<-as.data.frame(df)
+gsub(pattern=".*001$",replacement = "here",)
+df<-subset(df,)
+
+data_clean <- function(arg) { 
+  outcome<-arg
+  output1<-gsub(pattern=" ",replacement="",arg)
+  if (output1!=arg){outcome<-output1}
+  output2<-gsub(pattern="-",replacement="",arg)
+  if (output2!=arg){outcome<-output2}
+  toupper(outcome)
+}
+
+data_clean <- function(arg) { 
+  outcome<-arg
+  output1<-gsub(pattern="\\s|-",replacement="",arg)
+  if (output1!=arg){outcome<-output1}
+  toupper(outcome)
+}
+
+df<-do.call(cbind,lapply(df,function(x) toupper(gsub("\\s|-","",x))))
+
+df<-as.data.frame(df)
+df_no_zimo<-dplyr::filter(df,df$First.Name!="ZIMO")
+
+#df_no_zimo[14,4:5]<-c("YIXIAO","LI","HUDK4050","IFSF4090","EDPS4002","EDPS4021","","")
+#as.factor(c("IFSF4090","EDPS4002","EDPS4021"))
+#df_no_zimo[14,4:6]<-as.factor(c("IFSF4090","EDPS4002","EDPS4021"))
+#df<-lapply(df, data_clean)
+
+g_hudk4050<-graph.data.frame(,directed,)
+
+```
 
 ### To Submit Your Assignment
 
