@@ -91,10 +91,61 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 ```{r}
-plot(g,layout=layout.fruchterman.reingold,vertex.size=EDGE$count*5,)
+library(tidyr)
+library(dplyr)
+library(igraph)
+student_sum<-EDGE%>%group_by(to)%>%summarise(sum(count))
+names(student_sum)<-c("id","count")
+teacher_sum<-EDGE%>%group_by(from)%>%summarise(sum(count))
+names(teacher_sum)<-c("id","count")
+vertex1<-bind_rows(teacher_sum,student_sum)
+g<-graph.data.frame(EDGE,directed = TRUE,vertices = vertex1)
+plot(g,layout=layout.fruchterman.reingold,edge.length=EDGE$count*10,edge.arrow.size=0.7,vertex.size=vertex1$count*2)
+```
+```{r}
+library(tidyr)
+library(dbplyr)
+Df<-hudk4050.classes
+D3<-unite(Df,V1,1:2)
+names(D3)<-c("Name","Class_1","Class_2","Class_3","Class_4","Class_5","Class_6")
+D3<-D3[-1,]
+D4<-gather(D3,Name,Class)
+D4[,1]<-D3$Name
+D4$Class<-gsub(pattern = "\\s",replacement = "",D4$Class)
+cnt<-ifelse(D4$Class=="",D4$count<-0,D4$count<-1)
+D4$count<-cnt
+classes<-unique(D4$Class)
+D4[34,2]<-"HUDK4050"
+D4[87,2]<-"HUDM4125"
+D4[140,2]<-"HUDM5026"
+D4[193,2]<-"HUDM5126"
+D5<-D4[!D4$Class=="",]
+D5<-spread(D5,Class,count,fill=0)
+D5<-select(D5,-HUDK4050)
+m1<-as.matrix(D5)
+row.names(m1)<-D5$Name
+m1<-m1[,-1]
+m1<-apply(m1,2,as.numeric)
+m2<-m1%*%t(m1)
+row.names(m2)<-D5$Name
+m1<-m1[,-1]
+m1<-apply(m1,2,as.numeric)
+m2<-m1%*%t(m1)
+row.names(m2)<-D5$Name
+colnames(m2)<-D5$Name
+diag(m2)<-NA
+library(igraph)
+m<-graph.adjacency(m2,mode="undirected")
+library(RColorBrewer)
+V(m)$cex<-0.5
+plot(m,layout=layout.fruchterman.reingold,vertex.color=rainbow(52),vertex.label.cex=0.4)
+
+
 ```
 
+```
 
+```
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
