@@ -103,9 +103,22 @@ g<-graph.data.frame(EDGE,directed = TRUE,vertices = vertex1)
 plot(g,layout=layout.fruchterman.reingold,edge.length=EDGE$count*10,edge.arrow.size=0.7,vertex.size=vertex1$count*2)
 ```
 ```{r}
-library(tidyr)
-library(dbplyr)
-Df<-hudk4050.classes
+library(dplyr)
+
+
+
+```
+
+```
+
+```
+## Part III
+
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+Df=read.csv("hudk4050-classes.csv")
 D3<-unite(Df,V1,1:2)
 names(D3)<-c("Name","Class_1","Class_2","Class_3","Class_4","Class_5","Class_6")
 D3<-D3[-1,]
@@ -139,19 +152,7 @@ m<-graph.adjacency(m2,mode="undirected")
 library(RColorBrewer)
 V(m)$cex<-0.5
 plot(m,layout=layout.fruchterman.reingold,vertex.color=rainbow(52),vertex.label.cex=0.4)
-
-
 ```
-
-```
-
-```
-## Part III
-
-Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
-
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
-
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
