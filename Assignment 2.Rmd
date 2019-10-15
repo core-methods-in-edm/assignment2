@@ -100,34 +100,24 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 
 library(igraph)
 #set edge
+DT<-EDGE%>%group_by(from)%>%
+    summarise(count=sum(count))
+names(DT) <- c("id", "count")
 
-edge1 <- count(D2, stid, tid)
-names(edge1) <- c("receive", "from", "counts")
-edge1
+DT
+DS<-EDGE%>%group_by(to)%>%
+    summarise(count=sum(count))
+names(DS) <- c("id", "count")
+DS
+New_df<-(bind_rows(DT,DS))
+New_df
+VERTEX_NEW<-merge(VERTEX,New_df, by ="id")
 
+g_new <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX_NEW)
 
+plot(g_new,layout=layout.fruchterman.reingold, vertex.color=VERTEX_NEW$gender,vertex.size=VERTEX_NEW$count)
 
-#First we will separate the teachers from our original data frame
-TCH <- select(D1, tid, t.gender, t.expertise)
-#Remove all the repeats so that we just have a list of each teacher and their characteristics
-TCH <- unique(TCH)
-#Add a variable that describes that they are teachers
-TCH$group <- "teacher"
-
-#Now repeat this process for the students
-STD <- select(D1, stid, s.gender, s.major)
-STD <- unique(STD)
-STD$group <- "student"
-
-#Make sure that the student and teacher data frames have the same variables names
-names(TCH) <- c("id", "gender", "topic", "group")
-names(STD) <- c("id", "gender", "topic", "group")
-
-#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
-VERTEX2 <- bind_rows(TCH, STD)
-VERTEX2
-g <- graph.data.frame(edge1, directed=TRUE, vertices=VERTEX2)
-plot(g, layout=layout.circle,  vertex.color=VERTEX2$gender, edge.width=edge1$counts)
+```
 
 
 
