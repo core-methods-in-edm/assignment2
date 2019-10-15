@@ -106,17 +106,18 @@ plot(g1,layout=layout.fruchterman.reingold, vertex.size = VERTEX1$counts)
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 ```{r}
+library(dplyr)
+library(tidyr)
 class <- read.csv("hudk4050-classes.csv")
 class <- select(class, Q8, Q9, Q1, Q3, Q4, Q5, Q6, Q7)
 names(class) <- c("First Name","Last Name", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6")
 class <- class[-c(1,2,36),]
-library(dplyr)
-library(tidyr)
 class <- tidyr::unite(class, "student", 1:2, sep = " ")
 class <- tidyr::gather(class, "order", "name",2:7)
 class <- class[, -2]
 class <- filter(class, !class$name == "")
 class$name <- gsub(" |-", "", class$name)
+class <- filter(class, !class$name == "HUDK4050")
 class$count <- 1
 class <- tidyr::spread(class, name, count, fill = 0)
 
