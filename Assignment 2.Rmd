@@ -1,9 +1,19 @@
 # Assignment 2 - Social Network Analysis
+# ALLISON TEEVAN
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+#install.packages("igraph")
+library("igraph")
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+
+```{r}
+D1 <- read.csv("discipline-data.csv")
+```
+
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -23,7 +33,7 @@ library(dplyr)
 D2 <- select(D1, tid, stid)
 ```
 
-Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
+Since our data represents every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
@@ -67,33 +77,175 @@ library(igraph)
 
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
-g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+graph1 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
 
-plot(g,layout=layout.fruchterman.reingold)
+plot(graph1,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(graph1,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(graph1,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+#remove clutter
+rm(V.STD)
+rm(V.TCH)
+
+#this way works
+#make new variable that counts total number of incidents by teacher and student from EDGE
+temp1 <- aggregate(tid ~ stid,FUN = length, data = D2)
+temp2 <- aggregate(stid ~ tid,FUN = length, data = D2)
+
+#rename columns 
+names(temp1) <- c("id", "count")
+names(temp2) <- c("id", "count")
+
+#check method works
+sum(temp1$count)
+sum(temp2$count)
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+COUNT <- bind_rows(temp1, temp2)
+rm(temp1)
+rm(temp2)
+
+#you can also do it this way which seems a little simpler 
+#TEST <- count(D2, tid)
+#TEST2 <- count(D2, stid)
+
+#changes vertex size based on number of interactions
+#changed arrows to be smaller 
+VERTEX2 <- VERTEX %>% left_join(COUNT, by = c("id"))
+
+plot(graph1,layout=layout.fruchterman.reingold, vertex.color=VERTEX2$gender,edge.arrow.size=0.1,vertex.size=VERTEX2$count)
+
+```
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+library(tidyverse)
+rm(list = ls())
+#read in data.
+data = read.csv(file = "hudk4050-classes.csv")
+
+#combine name to be full 
+data <- data %>% unite(full_name, First.Name, Last.Name, sep="_")
+
+#remove spaces in names column 
+data$full_name <- (gsub(" ", "", data$full_name))
+
+data2 <- gather(data, class_type, course_name, 2:7)
+
+#remove class_type
+data2$class_type <- NULL
+
+#remove spaces from course names 
+data2$course_name <- (gsub(" ", "", data2$course_name))
+
+#replace tricky entries
+data2$course_name <- (gsub("HUDK4050", "4050", data2$course_name))
+data2$course_name <- (gsub("4050", "HUDK4050", data2$course_name))
+data2$course_name <- (gsub("HUDMHUDK4050", "HUDM4050", data2$course_name))
+
+data2$course_name <- (gsub("HUDM4125", "4125", data2$course_name))
+data2$course_name <- (gsub("4125", "HUDM4125", data2$course_name))
+
+data2$course_name <- (gsub("HUDM5026", "5026", data2$course_name))
+data2$course_name <- (gsub("5026", "HUDM5026", data2$course_name))
+
+data2$course_name <- (gsub("HUDM5126", "5126", data2$course_name))
+data2$course_name <- (gsub("5126", "HUDM5126", data2$course_name))
+
+#remove duplicates
+data2 <- unique(data2)
+
+#remove HUDK4050 class for everyone
+data2 <-data2[(data2$course_name!="HUDK4050"),]
+
+#add column of 1s
+data2$count <- "1"
+
+#create new matrix how we want it
+data3 <- spread(data2, course_name, count)
+
+#remove column of V1 (blank)
+data3$V1 <- NULL
+
+#replace NA with zero
+data3[is.na(data3)] <- 0
+```
+
+
+```{r}
+#move full name to be row name
+row.names(data3) <- data3$full_name
+data3$full_name <- NULL
+
+#add ID number to name list so we can match them later 
+data$id <- seq(1,53,1)
+
+#trying to multiply matrices to get matrix to plot 
+data3 <- as.data.frame(sapply(data3, as.numeric))
+data3 <- as.matrix((data3))
+data4 <- t(data3)
+
+data5 <- data3 %*% data4
+
+#add back names
+names <- data[,c("id", "full_name")]
+
+row.names(data5) <- names$full_name
+colnames(data5) <- names$full_name
+```
+
+plot the graph from the adjacency matrix 
+```{r}
+library(igraph)
+
+graph2 <- graph_from_adjacency_matrix(data5, weighted = TRUE,
+  diag = FALSE, add.colnames = NULL, add.rownames = NA)
+
+#plot graph
+plot(graph2,layout=layout.fruchterman.reingold,edge.arrow.size=0.01)
+
+```
+
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
+
+```{r}
+
+#degree
+#number of connections you have
+which.max(degree(graph2))
+#Eudora Xinyi Niu 
+
+
+#betweenness centrality
+#bottleneck in network. Very connected
+which.max(betweenness(graph2))
+#Eudora Xinyi Niu (again)
+
+#Conclusion: Eudora Xinyi Niu is most central person in the network!
+
+```
+
 
 ### To Submit Your Assignment
 
