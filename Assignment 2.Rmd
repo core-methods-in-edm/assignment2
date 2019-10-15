@@ -93,18 +93,22 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
 ```{r}
+# Count the number of disciplinary actions for each student and teacher
 V2.TCH <- count(D1, tid)
 V2.ST <- count(D1, stid)
 
+#Change the variable names and combine the two sets of numbers
 names(V2.TCH) <- c("id", "number")
 names(V2.ST) <- c("id", "number")
 number <- bind_rows(V2.TCH, V2.ST)
 
+#Add the numbers to VERTEX
 VERTEX <- merge(VERTEX, number)
 
 g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 
-plot(g2, vertex.size=VERTEX$number, edge.width=EDGE$count, vertex.label.cex=0.8, vertex.label.dist=1, vertex.label.degree = -pi/2, edge.arrow.size = 0.8, asp = 0)
+#Change the vertex size so it reflects the number of disciplinary actions received or given out. Labels are placed above the vertices so they are easier to read. 
+plot(g2, vertex.size=VERTEX$number, edge.width=EDGE$count, vertex.label.cex=0.8, vertex.label.dist=1, vertex.label.degree = -pi/2, edge.arrow.size = 0.8, asp=0)
 ```
 
 
@@ -113,38 +117,62 @@ plot(g2, vertex.size=VERTEX$number, edge.width=EDGE$count, vertex.label.cex=0.8,
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 ```{r}
+library(tidyr)
 hudk4050_classes <- read_csv("hudk4050-classes.csv")
 
+#Select the variables needed, delete the first two rows, and rename the variables
 D3 <- select(hudk4050_classes, Q10:Q7)
 D3 <- D3[-(1:2), ]
 names(D3) <- c("id", "class1", "class2", "class3", "class4", "class5", "class6")
 
-library(tidyr)
+#Gather all the classes into one column, remove the NAs, and add a variable "number" which is the numeric part of the course name. 
 df3 <- gather(D3, "enrolled", "class", 2:7, na.rm = TRUE)
 df3$number <- gsub("[^[:digit:]]", "", df3$class)
+
+#Compare "number" and class name, and rename the duplicates. 
 df3$number[df3$class == "HUDM 4050"] <- "40502"
 df3$number[df3$class == "MSTU4023"] <- "40232"
 df3$number[df3$class == "MSTU 4052"] <- "40522"
 df3$number[df3$class == "MSTU4052"] <- "40522"
 df3$number[df3$class == "HUD 4120"] <- "41202"
 
+#Assign "1" to "enrolled" so it can be used in the matrix. Delete the "class" variable after checking for duplicates. 
 df3$enrolled <- 1
 df3$class <- NULL
 
+#Spread the class numbers into their own columns and assign "0" to the NAs.
 df4 <- spread(df3, "number", "enrolled", is.na(0))
 df4$id <- NULL
-df4$"4050" <- NULL
+
+#Create a matrix from df4, and multiply it by its transpose 
 m <- data.matrix(df4)
 my_matrix <- m %*% t(m)
 
+#Graph from adjacency matrix and remove the diagonal. Grid seemed to work best for this graph. 
+g3 <- graph_from_adjacency_matrix(my_matrix, mode = c("undirected"), weighted = TRUE, diag = FALSE)
+plot(g3, layout=layout_on_grid, vertex.size = 3, vertex.label = NA, vertex.color = "black", edge.width = .2)
 
+#Since everyone is taking HUDK4050, we can remove it to make the graph more informative. 
+df4$"4050" <- NULL
+
+m <- data.matrix(df4)
+my_matrix <- m %*% t(m)
+
+#Graphing without HUDK4050
 g3 <- graph_from_adjacency_matrix(my_matrix, mode = c("undirected"), weighted = TRUE,
 diag = FALSE)
-plot(g3, layout=layout_on_grid, vertex.size = 5, vertex.label = NA)
+plot(g3, layout=layout_on_grid, vertex.size = 3, vertex.label = NA, vertex.color = "black", edge.width = .2)
 ```
 
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+View(betweenness(g3, directed=T, weights=NA))
+View(degree(g3, mode="in"))
+
+#47, or yz3679, has the highest betweeness centrality.
+```
+
 
 ### To Submit Your Assignment
 
