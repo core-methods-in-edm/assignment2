@@ -86,12 +86,52 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+library(dplyr)
+library(igraph)
+stud<- EDGE%>% group_by(to)%>% summarise(counts=sum(count))
+teac<- EDGE%>% group_by(from)%>% summarise(counts=sum(count))
+names(stud)<-c("id","counts")
+names(teac)<-c("id","counts")
+df<- bind_rows(teac,stud)
+g1<- graph.data.frame(EDGE,directed=TRUE,vertices=df)
+plot(g1,layout=layout.fruchterman.reingold,vertex.size=df$counts)
+```
 
 
 
 ## Part III
 
-Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igra%>%group_by(class)ph.
+```{r}
+if (!require("tidyr")) {
+  install.packages("tidyr") 
+  require("tidyr") 
+}
+library(tidyr)
+H1<-read.csv("hudk4050-classes.csv", header =TRUE, na.strings = "")
+H2<-gather(H1, Name, class, 3:8)
+H2$class = gsub(" ", "", H2$class)
+H2 <- H2 %>% filter(First.Name != "ZIMO") %>% filter(class != "HUDK4050") %>% unite(Student_Name, First.Name, Last.Name, sep = " ") %>% select(-c(Name))
+H2<-subset(H2, select=c("class", "Student_Name"))
+H3<-H2 %>% group_by(class)
+#the plot of person-class matrix
+g<- graph.data.frame(H3,directed=FALSE)
+plot(g,layout=layout.fruchterman.reingold(g),vertex.size=10,cex = 5) 
+H3$count <- "1"
+H3$count<-as.numeric(H3$count)
+H3%>% group_by(class)%>%summarise(counts=sum(count))
+# H4 is the person-class matrix
+H4<-spread(H3,class,count) 
+
+H4 = data.frame(H4$Student_Name,ifelse(is.na(H4[,2:50]),0,1))
+H5 = as.matrix(H4[2:50])
+row.names(H5) = H4$H4.Student_Name
+H6 <- H5 %*% t(H5)
+g <- graph.adjacency(H6, mode = "undirected")
+plot(g, layout = layout.fruchterman.reingold,vertex.size=10)
+```
+
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
