@@ -150,7 +150,7 @@ person_class[,2] <- gsub("([A-Z]+)\\s*([0-9]+)", "\\1 \\2", person_class[,2])
 person_class[person_class == 'QMSS-G 5072' | person_class == 'G 5072'] <- 'QMSS 5072'
 person_class[person_class == 'QMSS G 5015'] <- 'QMSS 5015'
 person_class[person_class == 'QMSS GR 5067' | person_class == 'G 5067'] <- 'QMSS 5067'
-
+person_class <- subset(person_class, CID != 'HUDK 4050')
 person_person <- merge(person_class, person_class, by = 'CID')
 names(person_person) <- c('CID', 'FROM', 'TO')
 person_person <- subset(person_person, !FROM == TO)
@@ -162,7 +162,10 @@ person_person.matrix <- pivot_wider(person_person.edge, names_from = FROM, value
 person_person.matrix %>% remove_rownames %>% column_to_rownames(var='TO')
 
 person_person.graph <- graph_from_data_frame(person_person.edge, directed=FALSE)
-plot(person_person.graph, layout=layout.sphere, vertex.label = V(person_person.graph)$FROM, vertex.size = 1)
+layout <- layout.reingold.tilford(person_person.graph, circular=T)
+plot(person_person.graph, layout=layout)
+plot(person_person.graph, layout=layout.fruchterman.reingold(person_person.graph), vertex.label = V(person_person.graph)$FROM, vertex.size = 1, cex = 1)
+plot(person_person.graph, layout=layout.random, vertex.label = V(person_person.graph)$FROM, vertex.size = 1)
 
 ```
 
