@@ -8,6 +8,7 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1<-read.csv("discipline-data.csv", header = TRUE)
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -87,6 +88,24 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+?count
+library (tidyr)
+
+sum.t <- EDGE%>%group_by(from)%>%summarize(sum(count))
+names(sum.t) <- c("id", "count")
+sum.s <- EDGE%>%group_by(to)%>%summarize(sum(count))
+names(sum.s) <- c("id", "count")
+total <- bind_rows(sum.t, sum.s)
+
+vertex2 <-full_join(VERTEX, total, by ="id")
+
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=vertex2)
+
+plot(g2,layout=layout.fruchterman.reingold, vertex.color=vertex2$gender,vertex.size=vertex2$count)
+
+
+```
 
 
 ## Part III
@@ -94,6 +113,42 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+classdata <- read.csv("hudk4050-classes.csv",header=TRUE, na.strings = "")
+
+classdata2 <-classdata%>%gather(classtype, coursename, Class.1, Class.2, Class.3, Class.4, Class.5, Class.6) %>% select(-c(classtype)) %>% filter(First.Name != "ZIMO")
+
+classdata3 <- classdata2%>%unite(Name,First.Name,Last.Name,sep = "_")
+
+classdata3$coursename <- gsub(" ", "", classdata3$coursename)
+
+classdata3$count <-1
+classdata3 <- classdata3 %>% filter(coursename != "HUDK4050")
+classdata4 <- classdata3 %>% spread(coursename, count)
+row.names(classdata4) <- classdata4$Name
+classdata4$Name <- NULL
+classdata4 <- ifelse (is.na(classdata4), 0, 1)
+
+classmatrix <- as.matrix(classdata4)
+classmatrixa  <- t(classmatrix) 
+classmatrix2 <- classmatrix%*%classmatrixa
+diag(classmatrix2) <- NA
+
+classgraph <- graph.adjacency(classmatrix2, mode = "undirected")
+
+plot(classgraph,layout=layout.fruchterman.reingold, vertex.size=5)
+
+degree(classgraph)
+betweenness(classgraph)
+
+which.max(degree(classgraph))
+which.max(betweenness(classgraph))
+```
+```{r}
+#Lintong has the highest overlap with other classmates, which means she shares most of her classes with other classmates. 
+```
+
 
 ### To Submit Your Assignment
 
