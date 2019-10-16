@@ -6,9 +6,22 @@ Start by installing the "igraph" package. Once you have installed igraph, load t
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
+```{r}
+#install.packages('igraph')
+library(igraph)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+
+```
+
+```
 
 ```{r}
+D1 <- discipline_data
 D1$stid <- as.factor(D1$stid)
+D1$stid
+class(D1$stid)
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -18,18 +31,20 @@ So let's convert our data into an edge list!
 First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
-library(dplyr)
-
 D2 <- dplyr::select(D1, tid, stid)
+class(D2)
+D2
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
-EDGE <- dplyr::count(D2, tid, stid)
-
+EDGE <- count(D2, tid, stid)
 names(EDGE) <- c("from", "to", "count")
+class(EDGE)
+EDGE
+
 
 ```
 
@@ -38,12 +53,11 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 ```{r}
 
 #First we will separate the teachers from our original data frame
-V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+V.TCH <- select(D1, tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
-
 #Now repeat this process for the students
 V.STD <- dplyr::select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
@@ -55,7 +69,7 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
-
+VERTEX
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
@@ -64,6 +78,15 @@ Now we have both a Vertex and Edge list it is time to plot our graph!
 #Load the igraph package
 
 library(igraph)
+library(RColorBrewer)
+
+str(VERTEX)
+str(EDGE)
+
+mycolors <- colors()[c(20,8)] 
+VERTEX$colors <- mycolors
+cbind(VERTEX$gender, VERTEX$colors)
+
 
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
@@ -75,20 +98,163 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$colors)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-````
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$colors, edge.width=EDGE$count)
+```
 
 ## Part II
 
-In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+#In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+#EDGE$id <- sum(EDGE$count)
+
+#plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$colors, vertex.size =EDGE$count*10)  #edge.width=EDGE$count*2)
+
+edge1 <- select(EDGE, from, to)
+edge1
+
+names(edge1) <- c('tid','stid')
+edge1
+S.EDGE <- count(edge1, stid)
+S.EDGE
+names(S.EDGE) <- c('id', 'count')
+S.EDGE
+T.EDGE <- count(edge1, tid)
+T.EDGE
+names(T.EDGE) <- c('id','count')
+
+VERTEX2 <- bind_rows(S.EDGE, T.EDGE)
+VERTEX3 <- merge(VERTEX2, VERTEX, 'id')
+VERTEX3
+g2 = graph.data.frame(EDGE, directed =TRUE, vertices = VERTEX3)
+
+
+plot(g2, layout = layout.fruchterman.reingold, vertex.color=T.EDGE$count, vertex.size = VERTEX3$count*5)
+
+#plot(g,layout=layout.fruchterman.reingold, vertex.color=EDGE$to, vertex.size = EDGE$count*10) 
+```
+
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(data.table)
+
+
+classdata <- hudk4050_classes
+class(classdata)
+colnames(classdata)
+
+classdata$Q8  # check for student names
+dim(classdata[duplicated(classdata$Q8),])[1]  # check for duplicate names
+
+classdata <- classdata[-c(1:2),] # remove rows 1 and 2 because they dont have student names
+colnames(classdata) 
+dropcolumns <- c('StartDate','EndDate','Status','IPAddress','Progress','Duration (in seconds)',
+                 'Finished','RecordedDate','ResponseId','RecipientLastName','RecipientFirstName',
+                 'RecipientEmail','ExternalReference','LocationLatitude','LocationLongitude',
+                 'DistributionChannel','UserLanguage','Q9','Q10','Q16','Q17') #remove unnecessary columns
+
+classdata <- classdata[ , !(names(classdata) %in% dropcolumns)] #remove unnecessary columns
+
+classdata <- setnames(classdata, old=c('Q8','Q1','Q3','Q4','Q5','Q6','Q7'), new=c("StudentName","Class1",'Class2','Class3','Class4','Class5','Class6')) #rename column names
+
+sapply(classdata, class) #check to see classtype in columns
+
+# making all classes uniform
+
+classdata$Class1 <- sub(" ", "", classdata$Class1) #make Class1 classes uniform
+classdata$Class1 
+classdata[34, 2] = 'HUDM4050' #edit class name zimo
+classdata$Class1
+
+classdata$Class2 <- sub(" ", "", classdata$Class2) #make Class2 uniform
+classdata$Class2
+classdata[14,3] = "IFSF4090" #edit class name
+classdata[34,3] = "HUDM4125"
+classdata$Class2
+
+classdata$Class3 <- sub(" ", "", classdata$Class3) #make Class3 uniform
+classdata$Class3
+classdata[14,4] = 'EDPS4002' #edit class name
+classdata[18,4] = 'QMSS5067'
+classdata[21,4] = NA
+classdata[34,4] = 'HUDM5026'
+classdata[45,4] = 'QMSS5072'
+classdata$Class3
+
+classdata$Class4 <- sub(" ", "", classdata$Class4) #make Class4 uniform
+classdata$Class4
+classdata[5,5] = 'QMSS5067'
+classdata[14,5] = 'EDPS4021'
+classdata[18,5] = 'QMSS5072'
+classdata[34,5] = 'HUDM5126'
+classdata$Class4
+
+classdata$Class5 <- sub(" ", "", classdata$Class5) #make Class4 uniform
+classdata$Class5
+classdata[22,6] = 'QMSS5015'
+classdata$Class5
+
+classdata$Class6 <- sub(" ", "", classdata$Class6) #make Class4 uniform
+classdata$Class6
+
+classdata[is.na(classdata)] <- 0
+
+classdata1 <- classdata %>% 
+  pivot_longer(cols = -StudentName, values_drop_na = TRUE) %>% 
+  distinct(StudentName, value) %>% 
+  mutate(n = 1) %>% 
+  pivot_wider(names_from = value, values_from= n)
+
+classdata1[is.na(classdata1)] <- 0
+classdata1 <- classdata1[,2:55]
+classdata1 <- as.matrix(classdata1)
+classdata1 
+
+rownames(classdata) <- classdata$StudentName
+dim(classdata1)
+dim(t(classdata1))
+ 
+stubystumatrix <- classdata1 %*% t(classdata1)    
+
+rownames(stubystumatrix) <- rownames(classdata)
+colnames(stubystumatrix) <- rownames(classdata)
+stubystumatrix
+
+classmatrix <- graph_from_adjacency_matrix(stubystumatrix, mode = c("undirected"), weighted = NULL,
+                            diag = FALSE, add.colnames = NULL, add.rownames = NA)
+
+plot(classmatrix)
+
+ # classdata1[is.na(classdata1)] <- 0
+ # classdata1 <- classdata1[,2:55]
+ # classdata1 <- data.matrix(classdata1)
+
+  
+#dim(classdata1)
+#dim(t(classdata1))
+
+#classdata1 %*% t(classdata1)    
+
+
+
+#classdata2 <- classdata %>% 
+#  pivot_longer(cols = -StudentName, values_drop_na = TRUE) %>% 
+#  distinct(StudentName, value) 
+#classdata2 
+
+
+```
+
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
