@@ -121,13 +121,109 @@ plot(g_new,layout=layout.fruchterman.reingold, vertex.color=VERTEX_NEW$gender,ve
 
 
 
-```
+
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+
 ```{r}
+#Read in data
+raw_data <- read.csv("hudk4050-classes_new.csv")
+#Select relevant variables
+library(tidyr)
+DF_new<-unite(raw_data, Name, "First.Name","Last.Name", sep = " ")
+DF_new
+rownames(DF_new) <- DF_new$Name
+class_DF <- DF_new %>% select(id = 'Name',
+                                class1 = 'Class.1',
+                                class2 = 'Class.2',
+                                class3 = 'Class.3',
+                                class4 = 'Class.4',
+                                class5 = 'Class.5',
+                                class6 = 'Class.6'
+                                )
+person_class_log <- class_DF %>%
+                        gather(key = class,
+                               value = course_code,
+                               c(class1, class2, class3, class4, class5, class6), -id) %>%
+                        select(id, course_code) %>%
+                        filter(!is.na(course_code)) %>%
+                        arrange(id) %>%
+                        mutate(enrolled = 1)
+# First need to clean all the course names, Going forward should make people use CRNs instead
+#Some people added spaces between department and course name, and others didn't. Replace with no spaces throughout
+person_class_log$course_code <- gsub(pattern = " ",
+                                     replacement = "",
+                                     x = person_class_log$course_code)
+# Different people took different approaches to filling in QMSS/GSAS courses. 
+# Some prefixes I found: G, GR, QMSS-G, QMSS G, QMSS GR, QMSS. 
+# Replace with form: GXXXX throughout.
+person_class_log$course_code <- gsub(pattern = "QMSS-",
+                                     replacement = "",
+                                     x = person_class_log$course_code)
+person_class_log$course_code <- gsub(pattern = "QMSS",
+                                     replacement = "G",
+                                     x = person_class_log$course_code)
+person_class_log$course_code <- gsub(pattern = "GG",
+                                     replacement = "G",
+                                     x = person_class_log$course_code)
+person_class_log$course_code <- gsub(pattern = "GR",
+                                     replacement = "G",
+                                     x = person_class_log$course_code)
+# I tried, but there's still some problems (E.g. one person who just put in numbers (e.g. 4050, 5026)).
+person_class_log <- person_class_log %>%
+                        filter(id != "ZIMO")
+#Also getting rid of HUDK4050 entries - since everyone in the data takes HUDK 4050.
+person_class_log <- person_class_log %>%
+                        filter(course_code != "HUDK4050")
+#Now we can make the person-class matrix.
+
+person_class_DF <- person_class_log %>%
+                          spread(key = course_code,
+                                 value = enrolled,
+                                 fill = 0)
+
+```
+
+```{r}
+#Creating the person-person matrix
+#Convert person_class_DF to a matrix
+person_class_DF_2 <- person_class_DF %>% select(-id)
+person_class_matrix <- as.matrix(person_class_DF_2)
+#Transpose the person_class_matrix
+class_person_matrix <- t(person_class_DF_2)
+#Multiply person_class matrix by its transposition to get person_person matrix
+person_person_matrix <- person_class_matrix %*% class_person_matrix
+#Rename rows and colums of our person_person matrix for clarity
+rownames(person_person_matrix) <- person_class_DF$id
+colnames(person_person_matrix) <- person_class_DF$id
+#Change the diagonals to NA to avoid complicating matters
+diag(x = person_person_matrix) <- NA
+person_person_graph_data <- graph_from_adjacency_matrix(person_person_matrix, mode = "undirected")
+plot.igraph(person_person_graph_data,
+     layout = layout.fruchterman.reingold,
+     vertex.size = 10,
+     vertex.label.cex = 0.4 
+     #vertex.label = NA
+     #Even at this small font size, the vertex labels affect readibility.
+     #Would prefer removing them instead using this command, but haven't done so for illustration here.
+     )
+```
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
+
+```{r}
+#Betweenness Centrality
+betweeness_centrality <- betweenness(person_person_graph_data)
+betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
+# Degree
+degrees <- degree(person_person_graph_data)
+degrees[degrees == max(degrees)]
+```
+
 ###clean data
+
 ### keep course number in the same format
 ### combine first name &last name
 ###keep names, course numbers (each person has several courses in each row)
