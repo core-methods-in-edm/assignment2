@@ -1,6 +1,7 @@
 ---
 output:
-  html_document: default
+  html_document: 
+    toc: yes
   word_document: default
   pdf_document: default
 ---
@@ -266,8 +267,9 @@ Once you have done this, also [look up](http://igraph.org/r/) how to generate th
 
 ```{r}
 #betweens centrality
-betweeness_centrality<- betweenness(Graph_data)
-betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
+centrality<- betweenness(Graph_data)
+centrality[centrality == max(centrality)]
+
 
 
 ```
