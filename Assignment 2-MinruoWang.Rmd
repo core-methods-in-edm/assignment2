@@ -83,7 +83,7 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- rbind(V.TCH, V.STD)
-
+VERTEX
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
@@ -150,9 +150,12 @@ plot(g, layout = layout.fruchterman.reingold, edge.arrow.size = 1,
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.  
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?** 
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweenness centrality and dregree. **Who is the most central person in the network?**  
 
+Answer: Xudian Zhang is the most central person in the network in terms of betweenness centrality.  
+Lintong Li is the most central person in the network in terms of degree.
 
+### Data Cleaning
 ```{r data cleaning}
 library(tidyr)
 library(dplyr)
@@ -199,9 +202,8 @@ hudk[2:7] <- as.data.frame(lapply(hudk[2:7],function(x){gsub(" ","",x)}))
 hudk
 ```
 
-
+### Person-class matrix
 ```{r matrix}
-### person-class matrix ###
 # gather into long spreadsheet
 hudk_long <- gather(hudk, "class", "course", 2:7)
 hudk_long <- hudk_long[,-2]
@@ -212,15 +214,42 @@ hudk_long$count <- 1
 
 # spread the class into column names
 hudk_wide <- spread(hudk_long, course, count)
+
+# set NA value to 0 (Not taking the course)
 hudk_wide[is.na(hudk_wide)] <- 0
+# set value to 1 (Taking the course)
 hudk_wide[hudk_wide=="1"] <- 1
+
+# change row name into index
+row.names(hudk_wide) <- hudk_wide$person
+hudk_wide <- hudk_wide[,-1]
 hudk_wide
+
+# convert into person-class matrix
+#hudk_pplclass_mat <- matrix(hudk_wide)
+#hudk_pplclass_mat
 ```
 
-
+### Person-person matrix
 ```{r}
 ### person-person matrix ###
-#hudk_wide_mat %*% t(hudk_wide_mat)
+hudk_person_mat <- as.matrix(hudk_wide)
+hudk_person_mat <- hudk_person_mat %*% t(hudk_person_mat)
+```
+
+### Build the Network
+```{r}
+# create graph from adjacency matrices
+hudk_network <- graph.adjacency(hudk_person_mat)
+plot(hudk_network, layout=layout.fruchterman.reingold)
+
+# between centrality
+hudk_bet_centrality <- betweenness(hudk_network, directed = TRUE)
+hudk_bet_centrality
+
+# degree centrality
+hudk_degree_centrality <- degree(hudk_network)
+hudk_degree_centrality
 ```
 
 
