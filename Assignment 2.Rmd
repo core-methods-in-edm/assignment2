@@ -120,9 +120,19 @@ print(data_s)
 ```
 #combine data_t and data_s
 ```{r}
-rbind(data_t,data_s)
+TOTAL = rbind(data_t,data_s)
+```
+```{r}
+VERTEX1 <- TOTAL
+summary(VERTEX1)
 ```
 
+```{r}
+
+g1 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
+
+plot(g1,layout=layout.fruchterman.reingold, vertex.color=VERTEX1$id, vertex.size=VERTEX1$count)
+```
 
 
 
