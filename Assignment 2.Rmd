@@ -114,9 +114,26 @@ Now practice with data from our class. Please create a **person-network** with t
 
 ```{r}
 library(tidyr)
-D3 <- read.csv ("hudk4050-classes.csv", header = TRUE)
-D4 <- gather(D3, key = Name, value = class, 3:8)
-unique(D4$class)
+H1 <- read.csv ("hudk4050-classes.csv", header = TRUE)
+H2<-gather(H1, Name, class, 3:8)
+H2$class = gsub(" ", "", H2$class)
+H2 <- H2 %>% filter(First.Name != "ZIMO") %>% filter(class != "HUDK4050") %>% unite(Student_Name, First.Name, Last.Name, sep = " ") %>% select(-c(Name))
+H2<-subset(H2, select=c("class", "Student_Name"))
+H3<-H2 %>% group_by(class)
+#the plot of person-class matrix
+g<- graph.data.frame(H3,directed=FALSE)
+plot(g,layout=layout.fruchterman.reingold(g),vertex.size=10,cex = 5) 
+H3$count <- "1"
+H3$count<-as.numeric(H3$count)
+H3%>% group_by(class)%>%summarise(counts=sum(count))
+# H4 is the person-class matrix
+H4<-spread(H3,class,count) 
+H4 = data.frame(H4$Student_Name,ifelse(is.na(H4[,2:50]),0,1))
+H5 = as.matrix(H4[2:50])
+row.names(H5) = H4$H4.Student_Name
+H6 <- H5 %*% t(H5)
+g <- graph.adjacency(H6, mode = "undirected")
+plot(g, layout = layout.fruchterman.reingold,vertex.size=10)
 ```
 
 
