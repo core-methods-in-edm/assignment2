@@ -1,3 +1,10 @@
+---
+title: "Assignment 2"
+author: "Beibei Cao"
+output: html_document
+---
+
+
 # Assignment 2 - Social Network Analysis
 
 ## Part I
@@ -8,10 +15,12 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
-install.packages("igraph")
+library(dplyr)
+library(tidyr)
 library(igraph)
+
 f<-file.choose("~/Desktop/hudk4050/Assignment 2/discipline-data.csv")
-D1<-read.csv(f)
+D1 <- read.csv(f, header = TRUE)
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -22,8 +31,6 @@ So let's convert our data into an edge list!
 First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
-library(dplyr)
-
 D2 <- select(D1, tid, stid)
 ```
 
@@ -75,36 +82,92 @@ g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
 
-plot(g,layout=layout.fruchterman.reingold)
+plot(g,layout=layout.fruchterman.reingold,edge.arrow.size=0.28)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold,edge.arrow.size=0.28,vertex.color=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g,layout=layout.fruchterman.reingold,edge.arrow.size=0.28,vertex.color=VERTEX$gender,edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
 ```{r}
-num_t <- count(EDGE,from)
-num_s <
+V2.TCH <- EDGE%>%select(from,count)%>%group_by(from)%>%summarize(sum(count))
+names(V2.TCH) <- c("id","count")
+V2.STD <- EDGE%>%select(to,count)%>%group_by(to)%>%summarize(sum(count))
+names(V2.STD) <- c("id","count")
+B <- bind_rows(V2.TCH,V2.STD)
+VERTEX <- full_join(VERTEX, B, by="id")
+g2 <- graph.data.frame(EDGE, vertices=VERTEX, directed=TRUE)
+plot(g2, layout=layout.fruchterman.reingold, edge.arrow.size=0.28,edge.width=EDGE$count, vertex.color=VERTEX$gender, vertex.size=VERTEX$count, vertex.shapes=as.factor(VERTEX$group))
 
 ```
-
-
-
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+
+
+```{r}
+
+
+h1 <- read.csv("hudk4050-classes.csv", header=TRUE)
+h1 <- lapply(h1, gsub, pattern=" ", replacement="")
+h1 <- as.data.frame(h1)
+h1 <- unite(h1, Name, "First.Name", "Last.Name", sep=" ")
+h1 <- filter(h1, Name > 0)
+h2 <- gather(h1, class_number, class_code, 2:7)
+h2 <- filter(h2, class_code > 0)%>%select(-class_number)
+h2 <- filter(h2, class_code != "HUDK4050")
+h2$count <- 1
+h2 <- unique(h2)
+h3 <- spread(h2, class_code, count, fill=0)
+row.names(h3) <- h3$Name
+h3$Name <- NULL
+h3 <- as.matrix(h3)
+h4 <- h3 %*% t(h3)
+diag(h4) <- NA
+g_PC <- graph.adjacency(h4, mode="undirected")
+plot(g_PC, layout=layout.fruchterman.reingold, vertex.label.size=0.428)
+
+```
+
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+degree(g_PC)
+betweenness(g_PC)
+d_N <- gather(h1, class_number, class, 2:7, na.rm=TRUE)%>% select(-class_number)
+d_N <- filter(d_N, class != "HUDK4050", class > 0)
+names(d_N) <- c("from","to")
+d_N <- unique(d_N)
+d_N$count <- 1
+
+v.std <- select(d_N, from, count)
+v.std <- group_by(v.std, from)%>%summarise(sum(count))
+v.std <- unique(v.std)
+v.cls <- select(d_N, to, count)
+v.cls <- group_by(v.cls, to)%>%summarise(sum(count))
+v.cls <- unique(v.cls)
+v.std$group <- "student"
+names(v.std) <- c("id","count","group")
+v.cls$group <- "class"
+names(v.cls) <- c("id", "count", "group")
+
+vertex_N <- bind_rows(v.std, v.cls)
+g_N<-graph.data.frame(d_N, directed = TRUE, vertices = vertex_N)
+plot(g_N, layout=layout.fruchterman.reingold,edge.arrow.size = 0.28, vertex.color=as.factor(vertex_N$group), vertex.size=vertex_N$count)
+
+```
+
 
 ### To Submit Your Assignment
 
