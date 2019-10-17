@@ -187,7 +187,7 @@ V(g3)$name[degree(g3)==max(degree(g3))]
 
 V(g3)$color <- ifelse(degree(g3)==max(degree(g3)), "red", "orange")
                                 
-plot(g3,layout=layout.fruchterman.reingold)
+plot(g3,layout=layout.fruchterman.reingold, vertex.label.cex=0.4,vertex.size=14)
 
 
 #reference:http://rpubs.com/wctucker/302110 
