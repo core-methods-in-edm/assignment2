@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Start by installing the "igraph" package. Once you have installed igraph, load the package.  
 ```{r igraph}
 # install
-install.packages("igraph")
+# install.packages("igraph")
 # load
 library("igraph")
 ```
@@ -38,7 +38,8 @@ D1$stid <- as.character(D1$stid)
 typeof(D1$stid)
 ```
 
-igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
+igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in.   
+There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
 
 So let's convert our data into an edge list!
 
@@ -46,7 +47,7 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r select}
 library(dplyr)
-# select relevant variables
+# select relevant variables into an edge list
 D2 <- select(D1, tid, stid)
 ```
 
@@ -105,21 +106,125 @@ plot(g, layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g, layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
-## Part II
+## Part II  
 
-In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.  
+
+```{r}
+# num of disciplinary actions: students
+disc_tch <- EDGE %>%
+  group_by(from) %>%
+  summarize(sum_disc = sum(count)) %>%
+  arrange(desc(sum_disc)) 
+names(disc_tch) <- c("id", "num_disc")
+disc_tch
+
+# num of disciplinary actions: teachers
+disc_stu <- EDGE %>%
+  group_by(to) %>%
+  summarize(sum_disc = sum(count)) %>%
+  arrange(desc(sum_disc)) 
+names(disc_stu) <- c("id", "num_disc")
+disc_stu
+
+# merge the num of disciplinary actions of students & teachers
+disc_all <- rbind(disc_tch, disc_stu)
+disc_all
+
+# set the size of nodes to the number of disciplinary actions
+node.size<-setNames(disc_all$num_disc, disc_all$id)
+
+# 
+plot(g, layout = layout.fruchterman.reingold, edge.arrow.size = 1,
+     vertex.label.color = "black", vertex.size = node.size)
+
+```
 
 
 
-## Part III
+## Part III  
 
-Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.  
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?** 
+
+
+```{r data cleaning}
+library(tidyr)
+library(dplyr)
+
+# load data
+hudk <- read.csv("hudk4050-classes.csv", header = TRUE, sep = ",")
+
+# format: turn names from factors to characters
+hudk$First.Name <- as.character(hudk$First.Name)
+hudk$Last.Name <- as.character(hudk$Last.Name)
+
+# format: write a function to capitalize the names
+CapStr <- function(x) {
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1,1)), tolower(substring(s, 2)), sep="", collapse=" ")
+}
+# apply the function
+hudk$First.Name <- sapply(hudk$First.Name , CapStr)
+hudk$Last.Name <- sapply(hudk$Last.Name , CapStr)
+
+# combine first and last name
+hudk$person <- paste(hudk$First.Name, hudk$Last.Name)
+
+# drop the column of first and last name
+hudk <- subset(hudk, select = c(person, Class.1, Class.2, Class.3, Class.4, Class.5, Class.6))
+
+# format: revise the course names
+levels(hudk$Class.3)[match("G 5067",levels(hudk$Class.3))] <- "QMSSG5067"
+levels(hudk$Class.4)[match("G 5072",levels(hudk$Class.4))] <- "QMSSG5072"
+levels(hudk$Class.1)[match("4050",levels(hudk$Class.1))] <- "HUDK4050"
+levels(hudk$Class.2)[match("4125",levels(hudk$Class.2))] <- "HUDM4125"
+levels(hudk$Class.3)[match("5026",levels(hudk$Class.3))] <- "HUDM5026"
+levels(hudk$Class.4)[match("5126",levels(hudk$Class.4))] <- "HUDM5126"
+levels(hudk$Class.3)[match("QMSS-G5072",levels(hudk$Class.3))] <- "QMSSG5072"
+levels(hudk$Class.2)[match("IFSF4090002",levels(hudk$Class.2))] <- "ITSF4090"
+levels(hudk$Class.3)[match("EDPS4002001",levels(hudk$Class.3))] <- "EDPS4002"
+levels(hudk$Class.4)[match("EDPS4021001",levels(hudk$Class.4))] <- "EDPS4021"
+
+# convert factor into character
+hudk[] <- lapply(hudk, as.character)
+
+# remove the space
+hudk[2:7] <- as.data.frame(lapply(hudk[2:7],function(x){gsub(" ","",x)}))
+hudk
+```
+
+
+```{r matrix}
+### person-class matrix ###
+# gather into long spreadsheet
+hudk_long <- gather(hudk, "class", "course", 2:7)
+hudk_long <- hudk_long[,-2]
+
+# delete the rows with no course
+hudk_long <- hudk_long[!(hudk_long$course==""), ]
+hudk_long$count <- 1
+
+# spread the class into column names
+hudk_wide <- spread(hudk_long, course, count)
+hudk_wide[is.na(hudk_wide)] <- "No"
+hudk_wide[hudk_wide=="1"] <- "Yes"
+hudk_wide
+```
+
+
+```{r}
+### person-person matrix ###
+hudk_wide_mat <- as.matrix(hudk_wide)
+hudk_wide_mat
+#hudk_wide_mat %*% t(hudk_wide_mat)
+```
+
 
 ### To Submit Your Assignment
 
