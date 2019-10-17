@@ -219,7 +219,13 @@ cleaner6 <- function(arg) {
   #  contains ’Alice’
   gsub(pattern = "G",replacement = "", x = arg, ignore.case = FALSE, perl = FALSE)
 }
-cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner6), stringsAsFactors = FALSE)
+
+cleaner7 <- function(arg) {
+  # Function to produce 1 if arg
+  #  contains ’Alice’
+  gsub(pattern = "QMSSQMSS5072",replacement = "QMSS5072", x = arg, ignore.case = FALSE, perl = FALSE)
+}
+cdf2a <- as.data.frame(sapply(X=cdf2a, FUN=cleaner7), stringsAsFactors = FALSE)
 
 cdf3<- cdf2a%>%                                                  #creates adjacency matrix from cdf2
   spread(key = "Class", value = "Present", 0) %>%
@@ -233,11 +239,11 @@ rownames(st2st)<-rownames(cdf4)
 g2<- graph_from_adjacency_matrix(st2st, mode = "undirected", diag = FALSE, add.rownames = TRUE, weighted = TRUE)
 colnames(cdf4)
 
-plot(g2)
+plot(g2, layout=layout_nicely)
 betweenness(g2)[which(betweenness(g2)==max(betweenness(g2)))]
 degree(g2)[which(degree(g2)==max(degree(g2)))]
 
-# Yujun Zhang is the most central person in the class; they have both the highest degree and betweenness centrality
+# Yujun Zhang is the most central person in the class; they have both the highest degree and betweenness centrality. I removed Zimo from the class, and since everyone is in HUDK4050, I have removed them from the data to limit the distortion it might have on the shape of the class.
 
 ```
 
