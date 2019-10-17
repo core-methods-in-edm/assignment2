@@ -59,7 +59,7 @@ EDGE <- count(D2, tid, stid)
 # name 
 names(EDGE) <- c("from", "to", "count")
 # show the edge list
-EDGE
+head(EDGE)
 ```
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
@@ -212,16 +212,14 @@ hudk_long$count <- 1
 
 # spread the class into column names
 hudk_wide <- spread(hudk_long, course, count)
-hudk_wide[is.na(hudk_wide)] <- "No"
-hudk_wide[hudk_wide=="1"] <- "Yes"
+hudk_wide[is.na(hudk_wide)] <- 0
+hudk_wide[hudk_wide=="1"] <- 1
 hudk_wide
 ```
 
 
 ```{r}
 ### person-person matrix ###
-hudk_wide_mat <- as.matrix(hudk_wide)
-hudk_wide_mat
 #hudk_wide_mat %*% t(hudk_wide_mat)
 ```
 
