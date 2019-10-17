@@ -4,10 +4,15 @@
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+library(igraph)
+D1 <- data.frame(discipline.data)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -30,7 +35,7 @@ Since our data represnts every time a teacher sends a student to the principal t
 EDGE <- count(D2, tid, stid)
 
 names(EDGE) <- c("from", "to", "count")
-
+EDGE
 ```
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
@@ -47,6 +52,7 @@ V.TCH$group <- "teacher"
 #Now repeat this process for the students
 V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
+V.STD$stid <- as.factor(V.STD$stid)
 V.STD$group <- "student"
 
 #Make sure that the student and teacher data frames have the same variables names
@@ -55,7 +61,6 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
-
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
@@ -68,6 +73,7 @@ library(igraph)
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
 
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+g
 
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
 
@@ -81,11 +87,24 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+countstd <- EDGE %>% group_by(to)%>%summarise(sum(count))
+counttch <- EDGE %>% group_by(from)%>%summarise(sum(count))
+names(countstd) <- c("id","count")
+names(counttch) <- c("id","count")
+VERTEX1<- bind_rows(countstd,counttch)
+VERTEX1
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
+g
+plot(g,layout=layout.fruchterman.reingold,vertex.size = VERTEX1$count*2)
+
+```
 
 
 
@@ -94,7 +113,10 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
-
+```{r}
+D3 <- data.frame(hudk4050.classes)
+D3
+```
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
