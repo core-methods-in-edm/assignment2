@@ -1,6 +1,7 @@
 ---
 output:
   html_document: 
+    keep_md: yes
     toc: yes
   word_document: default
   pdf_document: default
@@ -10,10 +11,9 @@ output:
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 ```{r}
+#install.packages("igraph")
 
-#We have to get the packages igraph
-
-install.packages("igraph")
+D1<-read.csv("discipline-data.csv",header = TRUE)
 
 library(igraph)
 
