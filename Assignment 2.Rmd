@@ -11,7 +11,7 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 
 ```{r}
 #name the given data file
-D1 <- read_csv("discipline-data.csv")
+D1 <- read.csv("discipline-data.csv")
 ```
 
 
