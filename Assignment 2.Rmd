@@ -142,8 +142,12 @@ plot(m,layout=layout.fruchterman.reingold,vertex.color=rainbow(52),vertex.label.
 ```
 
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?*
+bet<-betweenness(m,V(m))
+bet[bet==max(bet)]
 
+deg<-degree(m)
+deg[deg==max(deg)]
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
