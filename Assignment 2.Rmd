@@ -120,48 +120,55 @@ plot(g2,layout=layout.fruchterman.reingold,vertex.color=VERTEX2$gender,vertex.si
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
 ```{r}
 library(tidyr)
 library(stringr)
 df<-read.csv("hudk4050-classes.csv")
 
 head(df)
-str(df) # all variables are factors
-df<-lapply(df,str_replace," ","")
-df<-lapply(df,str_replace,"-","")
-df<-lapply(df,toupper)
-df<-as.data.frame(df)
-gsub(pattern=".*001$",replacement = "here",)
-df<-subset(df,)
-
-data_clean <- function(arg) { 
-  outcome<-arg
-  output1<-gsub(pattern=" ",replacement="",arg)
-  if (output1!=arg){outcome<-output1}
-  output2<-gsub(pattern="-",replacement="",arg)
-  if (output2!=arg){outcome<-output2}
-  toupper(outcome)
-}
-
-data_clean <- function(arg) { 
-  outcome<-arg
-  output1<-gsub(pattern="\\s|-",replacement="",arg)
-  if (output1!=arg){outcome<-output1}
-  toupper(outcome)
-}
-
+#Tidying data by replacing all spaces and hyphens with ""
 df<-do.call(cbind,lapply(df,function(x) toupper(gsub("\\s|-","",x))))
 
 df<-as.data.frame(df)
-df_no_zimo<-dplyr::filter(df,df$First.Name!="ZIMO")
+df<-filter(df,df$First.Name!="ZIMO") #erase "ZIMO"'s dirty data
+df<-df%>%
+  unite(Full.Name,First.Name,Last.Name)%>%
+  gather(My_orders,My_courses,-Full.Name)%>%
+  select(Full.Name,My_courses)
 
-#df_no_zimo[14,4:5]<-c("YIXIAO","LI","HUDK4050","IFSF4090","EDPS4002","EDPS4021","","")
-#as.factor(c("IFSF4090","EDPS4002","EDPS4021"))
-#df_no_zimo[14,4:6]<-as.factor(c("IFSF4090","EDPS4002","EDPS4021"))
-#df<-lapply(df, data_clean)
+#Erase all the empty values by filtering 
+df<-df%>%
+  filter(My_courses!="")%>%
+  arrange(Full.Name)
 
-g_hudk4050<-graph.data.frame(,directed,)
+#Adding column Count:"1" for spread
+df$Count<-1
+
+#Creating a matrix for person-course
+person_course<-spread(df,My_courses,Count,fill=0)
+
+library(tibble)
+person_course<-person_course %>%
+  remove_rownames %>%
+  column_to_rownames(var="Full.Name")
+
+#Creating a matrix for person-person
+name_course<-as.matrix(person_course)
+course_name<-t(name_course)
+person_person_matrix<-name_course%*%course_name
+
+#Creating a grap from an adjacency matrix(person-person)
+g3<-graph_from_adjacency_matrix(person_person_matrix,mode="directed",diag=FALSE)
+plot(g3)
+
+#Betweenness centrality
+betweenness(g3,v=V(g3),directed=TRUE)
+
+#find the max degree and the most
+max(degree(g3))
+V(g3)[degree(g3)==max(degree(g2))] 
+# obviously LINGTONG_LI is the most central person in the network
 
 ```
 
