@@ -241,7 +241,6 @@ names(degreeCentdf) <- c("degree", "studentNames")
 
 highDegreePerson <- subset(degreeCentdf, degree==max(degree))
 
-
 ```
 
 ### To Submit Your Assignment
