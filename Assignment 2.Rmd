@@ -8,6 +8,8 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+library(igraph)
+D1 <- read.csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -81,11 +83,59 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+plot(g,layout=layout.circle, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+EDGE <- count(D2, stid, tid)
+
+names(EDGE) <- c("from", "to", "count")
+
+#First we will separate the teachers from our original data frame
+V.TCH <- select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- bind_rows(V.TCH, V.STD)
+#Load the igraph package
+
+library(igraph)
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+plot(g,layout=layout.circle, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+```
 
 
 
@@ -94,7 +144,64 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+library(tidyr)
+library(visNetwork)
+# read original csv and name as DF1
+DF1 <- read.csv("hudk4050-classes.csv", header = TRUE, na.strings = "")
+# choose what we want from DF1 and name as DF2: take columns of class 1 ~ class 6 and collapses into key-value pairs, key is "course", value is "code" of course; paste together columns of first name and last name into one column called "name"; keep the column of name and code
+DF2 <- DF1 %>% 
+  gather(course, code, Class.1: Class.6) %>%
+  unite(name, First.Name, Last.Name, sep = "_") %>%
+  select(name, code) 
+# remove spaces between letters and numbers in the "code" column
+DF2$code <- gsub("", "", DF2$code)
+# prepare DF3 ready for matrix: count 1 if the person takes this course; remove all HUDK4050 in case the matrix will be too complicated to read; spread key-value pairs, key is the code, value is the count 
+DF3 <- DF2 %>% 
+  mutate(count = 1) %>%
+  filter(code != "HUDK4050") %>%
+  spread(code, count)
+# create a matrix of DF3
+DF3_matrix <- data.matrix(DF3)
+# set rownames as person name
+rownames(DF3_matrix) <- DF3$name
+# fill the matrix with 0 & 1 according to whether the cell is NA
+DF3_matrix <- ifelse(is.na(DF3_matrix), 0, 1)
+# create a final matrix which connect students and courses
+finalMatrix <- DF3_matrix %*% t(DF3_matrix)
+# remove all diagonols in case all the students connect to themselves
+diag(finalMatrix) <- 0
+# plot graph
+graph <- graph.adjacency(finalMatrix, mode = "undirected")
+plot(graph, vertex.size=5, vertex.color="green")
+#create a more pretty version of the graph using visNetwork
+data <- toVisNetworkData(graph)
+nodes <- data.frame(data$nodes,
+  # add labels on nodes
+  label = DF3$name,
+  color = "orange")   
+visNetwork(nodes, edges = data$edges, height = "500px", width = "100%")
+```
+
+```{r}
+# create matrix of degree and betweenness
+centralMatrix <- DF3 %>% 
+  mutate(degree = degree(graph, v=V(graph))) %>%
+  mutate(betweenness = betweenness(graph, v=V(graph))) %>%
+  select(name, degree, betweenness)
+# create a matrix called centralMatrix which is sorted by degree
+centralMatrix <- centralMatrix %>% arrange(desc(degree))
+# print centralMatrix
+centralMatrix
+```
+# The first student (Lintong Li) in centralMetrix is the central person in our class.
+
+
+
+
 
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
+
+
