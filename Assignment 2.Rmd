@@ -6,6 +6,11 @@ Start by installing the "igraph" package. Once you have installed igraph, load t
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
+### uplload the data
+```{r}
+D1<- read.csv(file="discipline-data.csv", header=TRUE, sep=",")
+```
+
 
 ```{r}
 D1$stid <- as.factor(D1$stid)
@@ -27,9 +32,9 @@ Since our data represnts every time a teacher sends a student to the principal t
 
 ```{r}
 
-EDGE <- count(D2, tid, stid)
+EDGE <- count(D2,stid, tid)#变一下位置，就是学生志向老师
 
-names(EDGE) <- c("from", "to", "count")
+names(EDGE) <- c("to", "from", "count")
 
 ```
 
@@ -38,10 +43,11 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 ```{r}
 
 #First we will separate the teachers from our original data frame
-V.TCH <- select(D1, tid, t.gender, t.expertise)
+V.TCH <- select(D1, tid, t.gender, t.expertise)#能不能再EDGE里unique
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
+# $是column？
 V.TCH$group <- "teacher"
 
 #Now repeat this process for the students
@@ -80,21 +86,91 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
 ````
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+sum.st <- EDGE %>% group_by(to)%>% summarise(sum(count))
+names(sum.st) = c("id", "count")
+sum.t <- EDGE %>% group_by(from)%>% summarise(sum(count))
+names(sum.t) = c("id", "count")
+total = bind_rows(sum.st, sum.t)
+vertex2 <- full_join(VERTEX, total, by= "id")
+vertex.size = vertex2$count 
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=vertex2)
+plot(g2,layout=layout.fruchterman.reingold, vertex.color=vertex2$gender, edge.width=EDGE$count, vertex.size=vertex2$count)
+```
 
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+```{r}
+PN<- read.csv(file="hudk4050-classes.csv", header=TRUE, sep=",")
+#clean data'
+PN <- PN[-(1:2),]
+library(dplyr)
+library(tidyr)
+#select useful informationa and unite names
+df <- PN %>% select(Q8,Q9, Q1,Q3,Q4,Q5,Q6,Q7)
+df <- df %>% unite(Name, Q8,Q9, remove = TRUE, sep=" ")
+# gather data
+df1<-gather(df,class_number, class_code, 2:7)
+# delete the messy data
+df2<- df1[-140,]
+df2<-df2[-87,]
+df2<-df2[-34,]
+df2<-df2[-179,]
+#clean the space
+df2 <- filter(df2, !df2$class_code=="")
+df2 <- df2[,-2]
+df2<-lapply(df2, gsub, pattern=" ", replacement="")
+df2$count <- 1
+df2 <- as.data.frame(df2)
+#spread all the class_code
+df3 <-tidyr::spread(df2,class_code,count,fill = 0)
+#df4 <-tidyr::spread(df2,Name,count,fill = 0)
+#create matrix
+row.names(df3)<-df3$Name
+df3$Name<-NULL
+m1<-as.matrix(df3)
+m2<-m1%*%t(m1)#为什么会有4？
+diag(m2)<-NA
+#create newtwork graph
+library(igraph)
+m<-graph.adjacency(m2, mode="undirected")
+library(RColorBrewer) 
+V(m)$cex<-0.5
+plot(m,layout=layout.fruchterman.reingold,vertex.label.size=0.5)
 
+# Calculate the degree centrality of the nodes
+degree(m)
+# Calculate the betweeness centrality
+betweenness(m)
+
+```
+
+
+```{r}
+
+
+Once you have done thisis, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+
+```
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
-### To Submit Your Assignment
 
-Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
+```{r}
+##Betweenness Centrality
+betweeness_centrality <- betweenness(m)
+betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
+##Degree
+degrees <- degree(m)
+```
+
