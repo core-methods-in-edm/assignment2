@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # Assignment 2 - Social Network Analysis
 
 ## Part I
@@ -6,7 +11,8 @@ Start by installing the "igraph" package. Once you have installed igraph, load t
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 ```{r}
 library(igraph)
-D1 <- data.frame(discipline.data)
+D1<-read.csv("~/Desktop/master fall/hudk4050/assignment2/discipline-data.csv")
+D1 <- data.frame(D1)
 ```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
@@ -24,7 +30,6 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
-
 D2 <- select(D1, tid, stid)
 ```
 
@@ -61,6 +66,7 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
+VERTEX
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
@@ -102,7 +108,7 @@ VERTEX1<- bind_rows(countstd,counttch)
 VERTEX1
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX1)
 g
-plot(g,layout=layout.fruchterman.reingold,vertex.size = VERTEX1$count*2)
+plot(g,layout=layout.fruchterman.reingold,edge.width=EDGE$count,vertex.size = VERTEX1$count*2)
 
 ```
 
@@ -114,8 +120,55 @@ Now practice with data from our class. Please create a **person-network** with t
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 ```{r}
-D3 <- data.frame(hudk4050.classes)
-D3
+library(tidyr)
+#modify data to get revelent variables   
+D3 <- read.csv("~/Desktop/master fall/hudk4050/assignment2/hudk4050.classes.csv")
+D3 <- data.frame(D3)
+names(D3) <- c("FirstName", "LastName", "Class1", "Class2","Class3","Class4","Class5","Class6")
+D4 <- select(D3,FirstName,Class1,Class2,Class3,Class4,Class5,Class6)
+D6<-  gather(D4,coursenum,course,Class1,Class2,Class3,Class4,Class5,Class6)
+D7 <- select(D6,FirstName,course)    
+#manage the course,that each student may type same course with diffterent way  
+D7 <- D7%>%filter(!course == "") %>% filter(course != "4050")    
+D7
+names(D7)<- c("student","course")
+D7$course <- gsub(" ","",D7$course)
+D7$course <- gsub("5026","HUDM5026",D7$course)
+D7$course <- gsub("5126","HUDM5126",D7$course)
+D7$course <- gsub("QMSS","G",D7$course)
+D7$course <- gsub("GG","G",D7$course)
+D7$course <- gsub("GGR","G",D7$course)
+#drop hudk4050, since everyone takes hudk4050
+D7 <- D7%>% filter(course != "HUDK4050")
+#generate person-class matrix
+D8<- mutate(D7,enrolled = 1)
+D9 <- spread(D8,course,enrolled,0)
+#generate person-person matrix
+D10<-select(D9,-student)
+D10 <- as.matrix(D10)
+D11 <- t(D10)
+D12<- D10 %*% D11
+diag(D12)<-0
+colnames(D12)<-D9$student
+rownames(D12)<-D9$student
+#plot igraph
+g1 <-graph_from_adjacency_matrix(D12,mode="undirected")
+V(g1)$label.cex <- seq(0.5,0.5,length.out=6)
+plot(g1,layout=layout.fruchterman.reingold,,vertex.size = 10,edge.arrow.size=0.3,vertex.label = D9$student,vertex.color=D9$student)
+
+```
+       
+##get betweeness centrality and max betweeness centrality person
+```{r}
+peoplebetween=betweenness(g1)
+maxpeoplebetween <-peoplebetween[peoplebetween == max(peoplebetween)]
+maxpeoplebetween
+```
+##get degree and people with max degree
+```{r}
+degree <- degree(g1)
+maxdegree <- degree[degree == max(degree)]
+maxdegree
 ```
 ### To Submit Your Assignment
 
