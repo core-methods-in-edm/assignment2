@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 # Assignment 2 - Social Network Analysis
 
 ## Part I
@@ -8,6 +13,7 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+D1 <- read.csv("discipline-data.csv", header = TRUE)
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -87,13 +93,69 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+``` {r}
+library(tidyr)
+library(dplyr)
 
+STU.SUM <- EDGE%>%group_by(to)%>%summarise(sum(count)) 
+TE.SUM <- EDGE%>%group_by(from)%>%summarise(sum(count)) 
+names(STU.SUM) <- c("id","count")
+names(TE.SUM) <- c("id","count")
+TOTAL <- bind_rows(STU.SUM,TE.SUM)
+VERTEX2 <- full_join(VERTEX,TOTAL,by="id")
+
+library(igraph)
+
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX2)
+plot(g2,layout=layout.fruchterman.reingold,vertex.color=VERTEX2$gender,vertex.size=VERTEX2$count)
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+## first, clean data - number and course descrip.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(igraph)
+
+D3 <- read.csv("hudk4050-classes.csv", header = TRUE)
+D4 <- unite(D3,Name, "First.Name","Last.Name",sep = "", remove = TRUE,na.rm = FALSE)
+D5 <- gather(D4, Class, Class.Num,"Class.1","Class.2","Class.3","Class.4","Class.5","Class.6", na.rm = TRUE, convert = FALSE)
+D5$Class.Num <- gsub(pattern = " ",replacement = "",D5$Class.Num)
+D6 <- select(D5,Name,Class.Num)
+names(D6) <- c("from", "to")
+D6 <- filter(D6,to>0,to!="HUDK4050")
+D6$count <- 1
+D6 <- unique(D6)
+D7 <- spread(D6,to,count,fill=0)
+D7 <- as.data.frame(D7)
+Max1 <- as.matrix(D7)
+row.names(Max1)<- D7$from
+class(Max1) <- "numeric"
+Max1 <- Max1[,-1]
+Max2 <- t(Max1)
+Max3 <- Max1 %*% Max2
+diag(Max3)
+g9 <- graph.adjacency(Max3,mode="undirected")
+degree(g9)
+betweenness(g9)
+pos_max <- which.max(degree(g9))
+print(pos_max)
+pos_max2 <- which.max(betweenness(g9))
+print(pos_max2)
+```
+#
+Who is the most central person in the network?
+LintongLi YujunZhang
+#
+```{r}
+plot(g9,layout=layout.fruchterman.reingold,vertex.color="grey")
+```
 
 ### To Submit Your Assignment
 
