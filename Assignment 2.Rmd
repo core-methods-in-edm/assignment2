@@ -1,7 +1,7 @@
 ---
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 # Assignment 2 - Social Network Analysis
 
@@ -130,7 +130,6 @@ D6<-  gather(D4,coursenum,course,Class1,Class2,Class3,Class4,Class5,Class6)
 D7 <- select(D6,FirstName,course)    
 #manage the course,that each student may type same course with diffterent way  
 D7 <- D7%>%filter(!course == "") %>% filter(course != "4050")    
-D7
 names(D7)<- c("student","course")
 D7$course <- gsub(" ","",D7$course)
 D7$course <- gsub("5026","HUDM5026",D7$course)
