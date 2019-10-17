@@ -8,6 +8,9 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
+rm(list=ls())
+library(readr)
+D1 <- read_csv("discipline-data.csv")
 D1$stid <- as.factor(D1$stid)
 ```
 
@@ -19,8 +22,10 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
-
+library(igraph)
 D2 <- select(D1, tid, stid)
+edge_list<-tibble(from = D2$tid, to = D2$stid)
+
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
@@ -75,18 +80,30 @@ plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+plot(g,layout=layout.fruchterman.reingold, vertex.colour=VERTEX$gender)
 
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
-plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+plot(g,layout=layout.fruchterman.reingold, vertex.colour=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+```{r}
+library(dplyr)
+library(igraph)
+a1<-count(D1,stid)
+a2<-count(D1,tid)
+names(a2)<-c("id","count")
+names(a1)<-c("id","count")
+a3<-rbind(a1,a2)
+VERTEX2<-full_join(VERTEX,a3)
+plot(g,layout=layout.fruchterman.reingold, vertex.colour=VERTEX$gender, edge.width=EDGE$count,vertex.size=VERTEX2$count)
+
+```
 
 
 ## Part III
@@ -94,6 +111,45 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+library(readr)
+library(tidyr)
+library(igraph)
+library(reshape2)
+data<-read_csv("hudk4050-classes.csv")
+names(data)[1]<-paste("F7")
+names(data)[2]<-paste("L8")
+names(data)[3]<-paste("C1")
+names(data)[4]<-paste("C2")
+names(data)[5]<-paste("C3")
+names(data)[6]<-paste("C4")
+names(data)[7]<-paste("C5")
+names(data)[8]<-paste("C6")
+attach(data)
+person1<-select(data,F7,L8,C1,C2,C3,C4,C5,C6)
+person2<-unite(person1, "F7", "L8", col = name, sep = " ")
+person3<-as.matrix(apply(person1,2,function(x)gsub('\\s+','',x)))
+name<-matrix(paste(F7,L8,sep=" "),53:1)
+class<-person3[,-c(1,2)] 
+data2<-cbind(name,class)# we got the cleaning data.
+
+data2<-as.data.frame(data2)
+classnum<- person2 %>% gather(classnum, classcode, `C1`, `C2`, `C3`, `C4`, `C5`, `C6`) %>% select(-c(classnum))
+classnum$classcode = gsub(" ", "", classnum$classcode)
+classnum <- classnum %>% filter(classcode != "HUDK4050") %>% filter(name != "ZIMO CHEN") %>% filter(classcode != "")
+classnum$Count = 1
+attach(classnum)
+pc<-spread(classnum, key = classcode, value = Count)
+row.names(pc)<-pc$name
+pc[is.na(pc)]<-0
+pc$name <- NULL
+pc1<-as.matrix(pc)
+pc2<-pc1%*%t(pc1)
+diag(pc2)<-NA
+graph1<-graph.adjacency(pc2,mode="undirected")
+plot(graph1,layout=layout.fruchterman.reingold)
+```
 
 ### To Submit Your Assignment
 
