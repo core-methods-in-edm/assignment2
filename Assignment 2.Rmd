@@ -3,7 +3,15 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+```{r}
+library(igraph)
+```
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- read.csv("discipline-data.csv", header = TRUE)
+head(D1)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -28,8 +36,11 @@ Since our data represnts every time a teacher sends a student to the principal t
 ```{r}
 
 EDGE <- count(D2, tid, stid)
+EDGE
 
 names(EDGE) <- c("from", "to", "count")
+
+head(EDGE)
 
 ```
 
@@ -41,13 +52,17 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 V.TCH <- select(D1, tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
+V.TCH
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
+head(V.TCH)
+
 
 #Now repeat this process for the students
 V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
+V.STD
 
 #Make sure that the student and teacher data frames have the same variables names
 names(V.TCH) <- c("id", "gender", "topic", "group")
@@ -69,6 +84,7 @@ library(igraph)
 
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 
+
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
 
 plot(g,layout=layout.fruchterman.reingold)
@@ -81,11 +97,25 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+EDGES.st <- EDGE %>% group_by(to) %>% summarise(sum(count))
+names(EDGES.st) <- c("id", "count")
+EDGES.tc <- EDGE %>% group_by(from) %>% summarise(sum(count))
+names(EDGES.tc) <- c("id", "count")
+total <- bind_rows(EDGES.st,EDGES.tc)
+total
+VERTEX2 <- full_join(VERTEX, total, by = "id")
+g2 <- graph.data.frame(total, directed = TRUE, vertices = VERTEX2)
+plot(g2, layout = layout.fruchterman.reingold, vertex.color = VERTEX2$gender,vertex.size = VERTEX2$count+10, arrow.size=0.5)
+```
+
 
 
 
@@ -95,6 +125,139 @@ Now practice with data from our class. Please create a **person-network** with t
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+```{r}
+library(tidyr)
+library(tidyverse)
+library(igraph)
+library(dplyr)
+
+data <- read.csv("hudk4050-classes.csv")
+data$abb <- paste(data$First.Name, data$Last.Name)
+data <- data[c(9, 3,4,5,6,7,8)]
+attach(data)
+data_unique <- data[c(2:7)]
+class <- c(unique(as.vector(as.matrix(data_unique))))
+class<-class[which(class!="")]
+
+#select only 4 numeric elements in classcodde
+l<-unique(unlist(lapply(gsub('\\D+','', class),FUN=(function (x){substr(x,1,4)}))))
+
+mat<-unlist(apply(data_unique, 1,
+      function (x,classSeries){
+        unlist(lapply(classSeries,
+            function (i,x) {as.logical(grep(i,as.vector(x),perl=TRUE,value=FALSE)[1])}
+        ,x=x))
+      },classSeries=l))
+data_unique2<-data
+data_unique2[] <- lapply(data, as.character)
+
+# Uniform the classcode into one format
+for (j in 2:length(data_unique2[1,])) {
+  for (i in 1:length(data_unique2[,1])) {
+    rep<-which(unlist(lapply(l,grepl,x=data_unique2[i,j])))
+    if (length(rep)>0) {data_unique2[i,j]<-l[rep]}
+  }
+}
+
+# Person-class matrix
+data3 <- gather(data_unique2,classcode,value=class,2:7)
+
+data4<-data3[,-2]
+data5<- mutate(data4,count=1)
+attach(data5)
+data6 <- filter(data5, class != "" & class != "4050")
+data7 <- unique(data6)
+data8 <- spread(data7, key=class,value=count)
+data8[is.na(data8)]<-0
+row.names(data8)<-data8$abb
+data8<-data8[,-1]
+data9 <-as.matrix(data8)
+
+#person-person matrix
+data10<-data9 %*% t(data9)
+diag(data10)<-NA
+
+g4<-graph.adjacency(data10,mode="undirected",diag=FALSE)
+
+
+plot(g4, layout=layout.fruchterman.reingold)
+
+btns<-betweenness(g4)
+which(btns==max(btns))   
+dg <- degree(g4)
+which(dg==max(dg))      
+
+
+
+```
+
+
+Method2 (Use function to do the person-class mapping)
+```{r}
+library(tidyr)
+library(tidyverse)
+library(igraph)
+
+data <- read.csv("hudk4050-classes.csv")
+data$abb <- paste(data$First.Name, data$Last.Name)
+data <- data[c(9, 3,4,5,6,7,8)]
+attach(data)
+data_unique <- data[c(2:7)]
+class <- c(unique(as.vector(as.matrix(data_unique))))
+class<-class[which(class!="")]
+#select only 4 numeric elements in classcodde
+l<-unique(unlist(lapply(gsub('\\D+','', class),FUN=(function (x){substr(x,1,4)}))))
+l <- l[l!="4050"]
+
+#Convert classcode to uniform format
+mapClass <- function (x, class) {
+  item<-grep(paste(x,"+",sep=""), class, perl=TRUE, value=TRUE)[1]
+  ind<-regexpr(x,item)[1]
+  item<-substr(item,1,ind+nchar(x)-1)
+  if (ind==1) {return(item)}
+  if (substr(item,ind-1,ind-1) != " ") {
+    item<-paste(substr(item,1,ind-1),substr(item,ind,nchar(item)),sep=" ")
+  }
+  return(item)
+}
+cleanClass<-unlist(lapply(l,FUN=mapClass,class=class))
+
+
+# Person to class matrix
+mat<-unlist(apply(data_unique, 1,
+      function (x,classSeries){
+        unlist(lapply(classSeries,
+            function (i,x) {as.logical(grep(i,as.vector(x),perl=TRUE,value=FALSE)[1])}
+        ,x=x))
+      },classSeries=l))
+mat[is.na(mat)] = 0
+
+
+# Person to Person matrix
+p2p <- t(mat)%*%mat
+colnames(p2p)<-data$abb
+rownames(p2p)<-data$abb
+diag(p2p)<-NA
+
+g3<-graph.adjacency(p2p,mode="undirected",diag=FALSE)
+
+
+plot(g3, layout=layout.fruchterman.reingold)
+
+btns<-betweenness(g3)
+which(btns==max(btns))   
+dg <- degree(g3)
+which(dg==max(dg))      
+
+
+
+```
+
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
+
+
+
+
+
