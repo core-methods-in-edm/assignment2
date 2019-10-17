@@ -1,9 +1,10 @@
 # Assignment 2 - Social Network Analysis
+# Xudian Zhang
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 ```{r}
-install.packages("igraph")
+#install.packages("igraph")
 library(igraph)
 ```
 
@@ -118,9 +119,7 @@ library(dplyr)
 library(tidyr)
 DC1 <- read.csv("hudk4050-classes.csv", header=TRUE)
 DC2 <- unite(DC1, "First.Name", "Last.Name", col = name, sep = " ")
-DC2
 DC3 <- DC2 %>% gather(classnum, classcode, `Class.1`, `Class.2`, `Class.3`, `Class.4`, `Class.5`, `Class.6`) %>% select(-c(classnum))
-DC3
 DC3$classcode = gsub(" ", "", DC3$classcode)
 
 DC3 <- DC3 %>% filter(classcode != "HUDK4050") %>% filter(name != "ZIMO CHEN") %>% filter(classcode != "")
