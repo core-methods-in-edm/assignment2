@@ -1,9 +1,22 @@
+---
+output:
+  html_document: default
+  word_document: default
+---
 # Assignment 2 - Social Network Analysis
-
+# Ziyuan Guo
+# Assignment 2
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+library(igraph)
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- read.csv("discipline-data.csv", header = TRUE)
+head(D1)
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -20,16 +33,17 @@ First we will isolate the variables that are of interest: tid and stid
 ```{r}
 library(dplyr)
 
-D2 <- dplyr::select(D1, tid, stid)
+D2 <- select(D1, tid, stid)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
 
-EDGE <- dplyr::count(D2, tid, stid)
+EDGE <- count(D2, tid, stid)
 
 names(EDGE) <- c("from", "to", "count")
+head(EDGE)
 
 ```
 
@@ -38,14 +52,14 @@ EDGE is your edge list. Now we need to make the vertex list, a list of all the t
 ```{r}
 
 #First we will separate the teachers from our original data frame
-V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+V.TCH <- select(D1, tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
 
 #Now repeat this process for the students
-V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
 
@@ -54,7 +68,7 @@ names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
-VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+VERTEX <- bind_rows(V.TCH, V.STD)
 
 ```
 
@@ -80,15 +94,72 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-````
+```
 
 ## Part II
 
-In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+# In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+EDGES.st <- EDGE %>% group_by(to) %>% summarise(sum(count))
+names(EDGES.st) <- c("id", "count")
+EDGES.tc <- EDGE %>% group_by(from) %>% summarise(sum(count))
+names(EDGES.tc) <- c("id", "count")
+total <- bind_rows(EDGES.st,EDGES.tc)
+total
+VERTEX2 <- full_join(VERTEX, total, by = "id")
+g2 <- graph.data.frame(total, directed = TRUE, vertices = VERTEX2)
+plot(g2, layout = layout.fruchterman.reingold, vertex.color = VERTEX2$gender,vertex.size = VERTEX2$count+10, arrow.size=0.3)
+```
+
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+```{r}
+# install.packages("tidyr")
+# install.packages("dplyr")
+library(tidyr)
+library(dplyr)
 
+# load file
+data1 <- read.csv("hudk4050-classes.csv", header = TRUE)
+# clean spaces
+data1<-lapply(data1, gsub, pattern=" ", replacement="")
+# unite names into one column
+data1<-as.data.frame(data1)
+data1<-unite(data1, StudentName, "First.Name", "Last.Name", sep=" ")
+# gather & select required data
+data2 <- data1 %>% gather (key = classnum, value = class, Class.1:Class.6)  %>% select (c(-classnum))
+
+data2 <- filter(data2, class >0)
+data2 <- filter(data2, class != "HUDK4050")
+data2$count<-1
+data2<-unique(data2)
+data3 <- data2 %>% spread(class, count) 
+
+# create matrix
+row.names(data3)<-data3$StudentName
+data3$StudentName<-NULL
+data3<-as.matrix(data3)
+data3 = ifelse(is.na(data3), 0, 1)
+data4<-data3 %*% t(data3)
+diag(data4)<-NA
+# graph
+g3<-graph.adjacency(data4, mode="undirected")
+plot(g3, layout=layout.fruchterman.reingold, vertex.label.size=0.5)
+
+betweenness(g3)
+degree(g3)
+which(betweenness(g3)==max(betweenness(g3)))   
+which(degree(g3)==max(degree(g3)))   
+# betweenness: Yujun Zhang 
+# degree: Lintong Li 
+```
+```
+
+### To Submit Your Assignment
+
+Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
