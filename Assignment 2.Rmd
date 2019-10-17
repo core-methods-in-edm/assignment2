@@ -237,13 +237,12 @@ st2st<-as.matrix(cdf5)%*%t(as.matrix(cdf5))
 colnames(st2st)<-rownames(cdf4)
 rownames(st2st)<-rownames(cdf4)
 g2<- graph_from_adjacency_matrix(st2st, mode = "undirected", diag = FALSE, add.rownames = TRUE, weighted = TRUE)
-colnames(cdf4)
 
 plot(g2, layout=layout_nicely)
 betweenness(g2)[which(betweenness(g2)==max(betweenness(g2)))]
 degree(g2)[which(degree(g2)==max(degree(g2)))]
 
-# Yujun Zhang is the most central person in the class; they have both the highest degree and betweenness centrality. I removed Zimo from the class, and since everyone is in HUDK4050, I have removed them from the data to limit the distortion it might have on the shape of the class.
+# Yujun Zhang is the most central person in the class; they have both the highest degree and betweenness centrality. I removed Zimo from the class, and since everyone is in HUDK4050; I have removed them from the data to limit the distortion that a common class (this class, lel) might have on the shape of the distribution. Yujun Zhang having both the highest betweenness score and the highest degree means that she has the highest number of connections with fellow peers and also has the shortest path on average to any of her peers. A short review of st2st matrix shows that Yujun has a large number of classmates that she shares at least 1 class with.
 
 ```
 
