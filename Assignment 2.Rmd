@@ -1,3 +1,13 @@
+---
+title: "assignment2"
+author: "Xiaowen Chen"
+date: "10/16/2019"
+output:
+  html_document: 
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
 # Assignment 2 - Social Network Analysis
 
 ## Part I
@@ -8,7 +18,9 @@ Now upload the data file "discipline-data.csv" as a data frame called "D1". Each
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
-D1<-data.frame(discipline.data)
+
+discipline_data <- read.csv("~/Desktop/2019fall/core methods in edm/assignment2/assignment 1015/discipline-data.csv")
+D1<-data.frame(discipline_data)
 D1
 
 D1$stid <- as.factor(D1$stid)
@@ -128,107 +140,107 @@ plot(g_new,layout=layout.fruchterman.reingold, vertex.color=VERTEX_NEW$gender,ve
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
 ```{r}
-#Read in data
-raw_data <- read.csv("hudk4050-classes_new.csv")
-#Select relevant variables
+
+raw_data <- read.csv("~/Desktop/2019fall/core methods in edm/assignment2/assignment 1015/hudk4050-classes.csv")
+
+#select useful columns
+install.packages("tidyverse",repos = "http://cran.us.r-project.org")
+install.packages("tidyr",repos = "http://cran.us.r-project.org")
 library(tidyr)
-DF_new<-unite(raw_data, Name, "First.Name","Last.Name", sep = " ")
-DF_new
-rownames(DF_new) <- DF_new$Name
-class_DF <- DF_new %>% select(id = 'Name',
-                                class1 = 'Class.1',
-                                class2 = 'Class.2',
-                                class3 = 'Class.3',
-                                class4 = 'Class.4',
-                                class5 = 'Class.5',
-                                class6 = 'Class.6'
-                                )
-person_class_log <- class_DF %>%
-                        gather(key = class,
-                               value = course_code,
-                               c(class1, class2, class3, class4, class5, class6), -id) %>%
-                        select(id, course_code) %>%
-                        filter(!is.na(course_code)) %>%
-                        arrange(id) %>%
-                        mutate(enrolled = 1)
-# First need to clean all the course names, Going forward should make people use CRNs instead
-#Some people added spaces between department and course name, and others didn't. Replace with no spaces throughout
-person_class_log$course_code <- gsub(pattern = " ",
+install.packages("dplyr",repos = "http://cran.us.r-project.org")
+data_new<-unite(raw_data, Name, "First.Name","Last.Name", sep = " ")
+data_new
+rownames(data_new) <- data_new$Name
+class <- data_new %>% select(Student_name = 'Name',
+                              Class1 = 'Class.1',
+                              Class2 = 'Class.2',
+                              Class3 = 'Class.3',
+                              Class4 = 'Class.4',
+                              Class5 = 'Class.5',
+                              Class6 = 'Class.6')
+class
+#make the students with courses. 
+person_class <- class %>%
+  tibble::rowid_to_column() %>% 
+  gather(key = class,
+         value = course_num,
+         c(Class1, Class2, Class3, Class4, Class5, Class6), -Student_name) %>%
+  select(Student_name, course_num) %>%
+  filter(!is.na(course_num)) %>%
+  arrange(Student_name)
+  
+#clean the data
+#I found that the course numbers are typed in, thus, the course codes are not in the same format. We need to have some steps to work on cleaning
+#The first step is to make sure the foundational formats are same, such that, there is a blank between department name and number. 
+person_class$course_num <- gsub(pattern = " ",
                                      replacement = "",
-                                     x = person_class_log$course_code)
-# Different people took different approaches to filling in QMSS/GSAS courses. 
-# Some prefixes I found: G, GR, QMSS-G, QMSS G, QMSS GR, QMSS. 
-# Replace with form: GXXXX throughout.
-person_class_log$course_code <- gsub(pattern = "QMSS-",
+                                     x = person_class$course_num)
+#Some student didn't provide the department name in the course code. We will remove that record.
+person_class <- person_class %>%
+  filter(Student_name != "ZIMO")
+#Some other replacements of formatting
+person_class$course_num <- gsub(pattern = "QMSS",
+                                     replacement = "G",
+                                     x = person_class$course_num)
+
+person_class$course_num <- gsub(pattern = "QMSS-",
                                      replacement = "",
-                                     x = person_class_log$course_code)
-person_class_log$course_code <- gsub(pattern = "QMSS",
-                                     replacement = "G",
-                                     x = person_class_log$course_code)
-person_class_log$course_code <- gsub(pattern = "GG",
-                                     replacement = "G",
-                                     x = person_class_log$course_code)
-person_class_log$course_code <- gsub(pattern = "GR",
-                                     replacement = "G",
-                                     x = person_class_log$course_code)
-# I tried, but there's still some problems (E.g. one person who just put in numbers (e.g. 4050, 5026)).
-person_class_log <- person_class_log %>%
-                        filter(id != "ZIMO")
-#Also getting rid of HUDK4050 entries - since everyone in the data takes HUDK 4050.
-person_class_log <- person_class_log %>%
-                        filter(course_code != "HUDK4050")
-#Now we can make the person-class matrix.
+                                     x = person_class$course_num)
 
-person_class_DF <- person_class_log %>%
-                          spread(key = course_code,
-                                 value = enrolled,
-                                 fill = 0)
-
+person_class$course_num <- gsub(pattern = "GG",
+                                     replacement = "G",
+                                     x = person_class$course_num)
+person_class$course_num <- gsub(pattern = "GR",
+                                     replacement = "G",
+                                     x = person_class$course_num)
+#Since all of us are taking the same course as HUDK 4050. So everyone was linked. In order to have a more obvious looking. We will filter out the HUDK 4050 records.
+person_class<- person_class %>%
+  filter(course_num  != "HUDK4050")
+#Yah! It seems that we have a cleaned data now!😄🎉
+inclass<-ifelse(person_class$course_num=="",person_class$inclass<-0,person_class$inclass<-1)
+DF<-person_class[!person_class$course_num=="",]
+DF<-spread(DF,course_num,inclass,fill=0)
 ```
-
 ```{r}
-#Creating the person-person matrix
-#Convert person_class_DF to a matrix
-person_class_DF_2 <- person_class_DF %>% select(-id)
-person_class_matrix <- as.matrix(person_class_DF_2)
-#Transpose the person_class_matrix
-class_person_matrix <- t(person_class_DF_2)
-#Multiply person_class matrix by its transposition to get person_person matrix
-person_person_matrix <- person_class_matrix %*% class_person_matrix
-#Rename rows and colums of our person_person matrix for clarity
-rownames(person_person_matrix) <- person_class_DF$id
-colnames(person_person_matrix) <- person_class_DF$id
-#Change the diagonals to NA to avoid complicating matters
+#Now,it's the time to build the matrix. 
+
+person_class_data<-subset(DF,select= -Student_name)
+
+#create matrix
+person_class_matrix<-as.matrix(DF)
+row.names(person_class_matrix)<-DF$Student_name
+person_class_matrix<-person_class_matrix[,-1]
+person_class_matrix<-apply(person_class_matrix,2,as.numeric)
+class_person_matrix<-t(person_class_matrix)
+row.names(person_class_matrix)<-DF$Student_name
+person_person_matrix <- person_class_matrix%*%class_person_matrix
+
+
+#Change the diagonals to NA becasue they won't connect to themselves
 diag(x = person_person_matrix) <- NA
-person_person_graph_data <- graph_from_adjacency_matrix(person_person_matrix, mode = "undirected")
-plot.igraph(person_person_graph_data,
-     layout = layout.fruchterman.reingold,
-     vertex.size = 10,
-     vertex.label.cex = 0.4 
-     #vertex.label = NA
-     #Even at this small font size, the vertex labels affect readibility.
-     #Would prefer removing them instead using this command, but haven't done so for illustration here.
-     )
+person_person_graph <- graph_from_adjacency_matrix(person_person_matrix, mode = "undirected")
+plot.igraph(person_person_graph,
+            layout = layout.fruchterman.reingold,
+            vertex.size = 7,
+            vertex.label.cex =0.5 ,
+            vertex.label = DF$Student_name,
+            vertex.label.dist=1.5,
+            vertex.label.color="black")
+
 ```
+
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
-
 ```{r}
+# degree
 #Betweenness Centrality
-betweeness_centrality <- betweenness(person_person_graph_data)
+betweeness_centrality <- betweenness(person_person_graph)
 betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
+#It seems that Yujun is the betweenness Centrality
 # Degree
-degrees <- degree(person_person_graph_data)
+degrees <- degree(person_person_graph)
 degrees[degrees == max(degrees)]
-```
-
-###clean data
-
-### keep course number in the same format
-### combine first name &last name
-###keep names, course numbers (each person has several courses in each row)
-###set edge(name)
-####nodes as course numbers
+#It seems that Lintong is the betweeness Centrality
 
 
 
