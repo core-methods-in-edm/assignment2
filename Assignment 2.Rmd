@@ -1,7 +1,7 @@
 ---
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 # Assignment 2 - Social Network Analysis
 
@@ -152,11 +152,15 @@ library(tidyr)
 
 #load the data file 
 
-HUDK_data<-read.csv("hudk4050-classes.csv")
+HUDK_data<-read.csv("hudk4050-classes Add CRNS.csv",header = TRUE)
 
 #selcet varibles and clean spaces
 
-Class_kind<- HUDK_data %>% select(id = 'First.Name',
+
+Class_kind<-as.data.frame(Class_kind)
+
+Class_kind<- HUDK_data %>% select(First.Name = 'First.Name',
+                                  Last.Name ='Last.Name',
                                 class1 = 'Class.1',
                                 class2 = 'Class.2',
                                 class3 = 'Class.3',
@@ -165,21 +169,48 @@ Class_kind<- HUDK_data %>% select(id = 'First.Name',
                                 class6 = 'Class.6'
                                 )
 
-Class_gather<- Class_kind %>%
-                        gather(key = class,value = course_code,
-                        c(class1, class2, class3, class4, class5, class6), -id)                         %>%
-                        select(id, course_code) %>%
-                        filter(!is.na(course_code)) %>%
-                        arrange(id) %>%
-                        mutate(enrolled = 1)
+#GET SEP
+
+Class_kind<-unite(Class_kind,Name,"First.Name","Last.Name",sep="")
+
+
+#Filter
+
+#For our convience, I just add the HUDK in front of the ZIMO 
+
+Class_gather<- gather(Class_kind,class.number,class.Name,-Name)
+
+Class_gather<-filter(Class_gather,class.Name>0)
+
+Class_gather<-select(Class_gather,Name,class.Name)
 
 # We need to aviod the gap on the course names, so we need coherence them
 
-Class_gather$course_code<- gsub(pattern = " ",
-                                replacement = "",  
-                                x=Class_gather$course_code)
+gather_class<-function(a){gsub("","",a)}
 
-#For our convience, I just add the HUDK in front of the ZIMO 
+Class_gather<-lapply(Class_gather,gather_class)
+
+Class_gather$count<-1
+
+Class_gather<-as.data.frame(Class_gather)
+
+Class_gather<-filter(Class_gather,class.Name!="HUDK4050")
+
+Class_gather$class.Name<- gsub(pattern = "QMSS-",
+                                replacement = "",  
+                                x=Class_gather$class.Name)
+
+Class_gather$class.Name <- gsub(pattern = "QMSS",
+                                     replacement = "G",
+                                     x = Class_gather$class.Name)
+Class_gather$class.Name <- gsub(pattern = "GG",
+                                     replacement = "G",
+                                     x = Class_gather$class.Name)
+Class_gather$class.Name <- gsub(pattern = "GR",
+                                     replacement = "G",
+                                     x = Class_gather$class.Name)
+
+
 
 
 #The row of output must be identified by a unique key
@@ -188,36 +219,41 @@ Class_gather<-unique(Class_gather)
 
 #Then we need to make matrix 
 
-Class_gather_matrix<-Class_gather %>% spread(key=course_code,
-                                             value = enrolled,
-                                             fill=0)
-#Then we convert matrix
-
-Class_gather_matrix2<-Class_gather_matrix %>% select(-id)
-Class_gather_matrix3<-as.matrix(Class_gather_matrix2)
-
-#Transpose
-
-Class_gather_matrix4<-t(Class_gather_matrix2)
-Class_gather_matrix5<-Class_gather_matrix3 %*% Class_gather_matrix4
+Class_gather_matrix<- spread(Class_gather,class.Name,count,fill=0)
 
 #Rename
 
-rownames(Class_gather_matrix5)<- Class_gather_matrix$id
-colnames(Class_gather_matrix5)<- Class_gather_matrix$id
+row.names(Class_gather_matrix)<- Class_gather_matrix$Name
+
+Class_gather_matrix$Name<-NULL
+
+Class_gather_matrix<-as.matrix(Class_gather_matrix)
+
+Class_gather_matrix2<-Class_gather_matrix %*% t(Class_gather_matrix)
 
 # Then aviod problem change to NA
 
-diag(x=Class_gather_matrix5)<- NA
+diag(x=Class_gather_matrix2)<- NA
 
 #Get a new graph data
 
-Graph_data<- graph_from_adjacency_matrix(Class_gather_matrix5, mode = "undirected")
+Graph_data<- graph.adjacency(Class_gather_matrix2,mode = "undirected")
 
 #Plog into data
 
-plot.igraph(Graph_data, layout = layout.fruchterman.reingold, vertex.size = 10,
-            vertex.label.cex = 0.4)
+plot.igraph(Graph_data, layout = layout.fruchterman.reingold, vertex.size = 15,
+            vertex.label.cex = 0.5)
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```
@@ -230,15 +266,17 @@ Once you have done this, also [look up](http://igraph.org/r/) how to generate th
 betweeness_centrality<- betweenness(Graph_data)
 betweeness_centrality[betweeness_centrality == max(betweeness_centrality)]
 
+
 ```
 ```{r}
 #dregree
 degrees <- degree(Graph_data)
 degrees[degrees == max(degrees)]
 
+
 ```
 
 
 ### To Submit Your Assignment
 
-Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
+Please submit your assignment by first "knitting" your R Markdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
