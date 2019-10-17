@@ -3,14 +3,14 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
-```{r set up}
+```{r set up part 1, results='hide'}
 library("igraph")
 library("dplyr")
 ```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
-```{r upload df}
+```{r upload df, results='hide'}
 setwd("~/Documents/GitHub/EDM Class/assignment2")
 D1 <- read.csv("Data/discipline-data.csv")
 ```
@@ -19,7 +19,7 @@ Before you proceed, you will need to change the data type of the student id vari
 
 ```{r}
 D1$stid <- as.factor(D1$stid)
-View(D1)
+
 ```
 
 igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine the edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
@@ -33,20 +33,20 @@ Since our data represnts every time a teacher sends a student to the principal t
 ```{r}
 D2 <- dplyr::select(D1, tid, stid)
 
-
 EDGE <- dplyr::count(D2, tid, stid)
 names(EDGE) <- c("from", "to", "count")
-View(EDGE)
+
 ```
 
 ```{r try out different method in the online tutorial}
 EDGE1 <- dplyr::count(D2, tid, stid)
-#n is like weight in the tutorial
+#notes: n is like weight in the tutorial
+
 EDGE1 <- aggregate(EDGE1[,3], EDGE1[,-3], sum)
 EDGE1 <- EDGE1[order(EDGE1$tid, EDGE1$stid),]
 names(EDGE1) <- c("from", "to", "count")
-View(EDGE1)
-#gives the sames result, but why does this jumble up the row numbers?
+
+#notes: gives the same result, but why does this jumble up the row numbers?
 
 ```
 
@@ -127,7 +127,6 @@ teacher_count_df <- EDGE %>%
 
 combined_count <- rbind(stud_count_df, teacher_count_df)
 
-
 combined_count <- as.data.frame(combined_count)
 combined_count$`sum(count)` <- as.numeric(combined_count$`sum(count)`)
 
@@ -141,18 +140,19 @@ plot(g, vertex.color=VERTEX$gender)
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-```{r tidy data set}
+```{r set up, include = FALSE}
 setwd("~/Documents/GitHub/EDM Class/assignment2")
 DF_class <- read.csv("Data/hudk4050-classes.csv")
 library(dplyr)
 library(tidyverse)
+```
 
+```{r tidy data set}
 DF_class <- DF_class %>%
   select("First_N" = Q8, "Last_N" = Q9, "UNI" = Q10, "Class 1" = Q1, "Class 2" = Q3, "Class 3" = Q4, "Class 4" = Q5, "Class 5" = Q6, "Class 6" = Q7) %>%
   unite(Name, First_N, Last_N, sep = " ")
 
 DF_class <- DF_class[-c(1,2), ]
-
 
 for (i in 3:8){
   DF_class[,i] <- gsub( " ", "", DF_class[,i]) 
@@ -166,10 +166,9 @@ DF_class[DF_class== c("G5067", "QMSSGR5067")] <- "QMSS5067"
 DF_class[DF_class=="G5072"] <- "QMSS5072"
 DF_class[DF_class=="HUDK4050"] <- ""
 
-
-#4050 -> HUDK4050, 4125 -> HUDM4125, QMSS-5072 -> QMSS5072,  5126 -> HUDM5126, G5067 -> QMSS5067, G5072 > QMSS5072, QMSSGR5067 -> QMSS5067
-#5026 - not sure which dept
-#HUDK4050 -> ""
+#rename: 4050 -> HUDK4050, 4125 -> HUDM4125, QMSS-5072 -> QMSS5072,  5126 -> HUDM5126, G5067 -> QMSS5067, G5072 > QMSS5072, QMSSGR5067 -> QMSS5067
+#left it: 5026 - not sure which dept
+#remove: HUDK4050 -> ""
 
 DF_class <- gather(DF_class, ClassNo, Classes, 3:8)
 DF_class <- DF_class[order(DF_class$Name),]
@@ -189,11 +188,9 @@ rownames(DF_class) <- DF_class$Name
 DF_class <- DF_class %>%
   select(-Name)
 
-View(DF_class)
-
 DF_class_matrix <- as.matrix(DF_class)
 adj_matrix <- DF_class_matrix %*% t(DF_class_matrix)
-
+adj_matrix
 ```
 
 ```{r person network convert data to igraph network object}
@@ -205,7 +202,6 @@ network
 E(network)$arrow.mode <- 0
 networks <- simplify(network)
 plot(networks, vertex.size = 5)
-
 
 ```
 
