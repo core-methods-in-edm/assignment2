@@ -3,7 +3,13 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
-Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+Now upload the data file "discipline-data.csv" as a data frame called "D1". 
+```{r}
+discipline.data <- read.csv("discipline-data.csv")
+D1 <- discipline.data
+```
+
+Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -87,13 +93,156 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+---------------------
+
+Ok real talk all of my original code got deleted at some point? but for whatever reason I had saved the environment SO workin' it backwards. 
+
+How did VERTEX become VERTEX_3?
+well I think VERTEX_2 was actually nonsense... a stepping stone on my way to clarity
+I made VERTEX_S for students with a column of disciplinary actions
+then I made VERTEX_T for teachers with a column of disciplinary actions
+Then I remember giggling to myself making VERTEX_2, which I don't even think I ended up using for anything relevant because the real deal is VERTEX_3, which was a merged df of VERTEX_S AND VERTEX_T
+
+``````{r}
+edge2T <- count(D2, tid)
+names(edge2T) <- c("ID", "Count")
+edge2S <- count(D2, stid)
+names(edge2S) <- c("ID", "Count")
+edge_test <- bind_rows(edge2T, edge2S)
+
+names(VERTEX) <- c("ID", "gender", "topic", "group")
+
+VERTEX_2 <- merge(VERTEX, edge_test,by="ID")
+
+VERTEX_2 <- mutate(VERTEX_2, Count_Graph_Size = Count + 14)
+
+g2 <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX_2)
+
+plot(g2, layout = layout_with_gem, vertex.size = VERTEX_2$Count_Graph_Size, vertex.color = (ifelse(test=VERTEX_2$group=="student", yes="yellow", no="orange")), edge.arrow.size=0.3, vertex.label.cex=0.6, vertex.label.family="sans")
+```
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+select necessary columns, remove first 3 rows of nonsense
+
+```{r}
+df <- hudk4050.classes
+df <- select(df, V20:V26)
+df <- df[-c(1:3), ]
+```
+
+gather class columns (2:7) by number
+rename headers
+remove number
+add Count column
+
+```{r}
+df1 <- gather(df, "number", "Course", 2:7)
+names(df1) <- c("UNI", "remove", "Course")
+df1 <- select(df1, UNI, Course)
+df1$Count = 1
+```
+
+CLEAN IT UP, KID 
+
+remove space or other char. between Courses XXXX 1234
+remove rows with blank Course data 
+remove rows with HUDK4050
+update course names
+remove student who didn't put any letters w/course #s 
+
+```{r}
+df1$Course = gsub(" ", "", df1$Course)
+df1$Course = gsub("-", "", df1$Course)
+df1 <- filter(df1, Course !="")
+df1 <- filter(df1, Course !="HUDK4050")
+
+clean <- mutate(df1, nchar = nchar(df1$Course))
+clean <- arrange(clean, desc(nchar))
+count(clean, nchar)
+filter(clean, nchar !=8)
+
+
+df1$Course[df1$Course=="G5072"] <- "GR5072"
+df1$Course[df1$Course=="G5067"] <- "GR5067"
+df1$Course[df1$Course=="QMSS5067"] <- "GR5072"
+df1$Course[df1$Course=="QMSSGR5067"] <- "GR5067"
+df1$Course[df1$Course=="QMSSG5015"] <- "GR5015"
+df1$Course[df1$Course=="IFSF4090002"] <- "ITSF4090"
+df1$Course[df1$Course=="QMSS5010"] <- "GR5010"
+df1$Course[df1$Course=="QMSS5015"] <- "GR5015"
+df1$Course[df1$Course=="QMSS5021"] <- "GR5021"
+df1$Course[df1$Course=="QMSS5072"] <- "GR5072"
+df1$Course[df1$Course=="QMSSG5072"] <- "GR5072"
+
+df1 <- filter(df1, UNI !="ZC2505")
+df1 <- arrange(df1, Course)
+
+
+course_count <- count(df1, Course)
+```
+
+# spread df1 into m 
+rename rows as UNIs 
+remove UNI column...
+  Q: is doing X1$UNI = NULL the same as doing X2 <- select(X1, -UNI)?
+change NAs to 0s 
+
+create m1 as multiple of m by its inverse
+change diag of m1 to NA
+
+create g_m1 with graph.adjacency function (undirected)
+  adding remove loops cut down edges to 438 from 646... 
+  g_m1 <- simplify(g_Xm, remove.multiple = T, remove.loops = T)
+
+```{r}
+m <- spread(df1, Course, Count)
+row.names(m) <- m$UNI
+m$UNI = NULL
+m <- ifelse(is.na(m), 0, 1)
+
+m1 <- as.matrix(m) %*% t(as.matrix(m))
+diag(m1) <- NA
+
+g_m1 <- graph.adjacency(m1, mode = "undirected")
+
+E(g_m1)
+g_m2 <- simplify(g_m1, remove.multiple = T, remove.loops = T)
+E(g_m2)
+```
+
+plot it up. don't love fruchterman reingold for this. Tried a bunch, fav is kk despite this layout hammering home all of my loneliness insecurities. #nobodyputsbabyinacorner
+Also, UNIs are too long here. should have assigned shorter IDs, ESP for full email kid.
+
+```{r}
+plot(g_m2, layout=layout_with_kk, edge.width = 0.25, vertex.label.cex=0.35, vertex.label.family="sans", vertex.size = 8, margin = -.05, asp = -.5)
+```
+
+Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and degree. **Who is the most central person in the network?**
+
+So these results for degree are kinda unsettling because I copied and pasted my code with minor alterations from a different Rmd file i had going and the numbers are a bit off... 
+Here's what I had written for the other file's data, where student ll3358 had a degree of 48: 
+ll3358 is taking 3 courses outside of HUDK4050, which are the 1st, 2nd, and 5th most popular classes being taken by HUDK4050 students this semester. HUDM5026 (18 students),	HUDK4052 (21 students),	HUDK4029 (12 students). 
+```{r}
+sort(degree(g_m2))
+```
+
+
+
+Betweenness is more or less the same as my other markdown doc, so maybe this one is correct and the other one was wacked. Unclear, anywho:
+
+yz3679 is taking 4 courses outside of HUDK4050:	HUDK4052,	HUDK4080,	HUDM5026, and	MSTU4052. HUDK4052 and HUDM5026 are the top 2 most popular classes shared among HUDK4050 students, then being in HUDM4080 connects yz3679 to 2 other students (ql2360 and IB2445) who are both in HUDK4029 (the 5th most popular class), plus ql2360 is in the 6th most popular class, and IB2445 in another random class that ties back to one other student who is fairly well connected as well (zz2726, betweenness = 13.1). I don't know, sounds about right though. 
+
+
+```{r}
+sort(betweenness(g_m2))
+```
+
+the most central person in the network is yz3679. don't tell your secrets to yz3679.
+
 
 ### To Submit Your Assignment
 
