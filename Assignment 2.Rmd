@@ -2,8 +2,16 @@
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
+```{r}
+#install.packages("igraph")
+library(igraph)
+```
 
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- discipline_data
+D1
+```
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -48,6 +56,8 @@ V.TCH$group <- "teacher"
 V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
+(V.STD)
+#(V.STD$group)
 
 #Make sure that the student and teacher data frames have the same variables names
 names(V.TCH) <- c("id", "gender", "topic", "group")
@@ -55,6 +65,7 @@ names(V.STD) <- c("id", "gender", "topic", "group")
 
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
+(VERTEX)
 
 ```
 
@@ -74,6 +85,11 @@ g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
 plot(g,layout=layout.fruchterman.reingold)
 
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+#Reassign red to "female" & blue to "male" so that gender is recognized by R as a color
+
+VERTEX$gender <- as.character(VERTEX$gender)
+VERTEX$gender[VERTEX$gender == "male"] <- "blue"
+VERTEX$gender[VERTEX$gender == "female"] <- "red"
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
@@ -86,15 +102,99 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
-
-
+```{r}
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, vertex.size=c(10:24))
+```
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
+```{r}
+library(utils)
+library(tidyr)
+library(textclean)
+library(stringr)
+library(stringi)
+D3 = read.csv("hudk4050-classes.csv")
+D4 <- select(D3, Q8, Q9, Q1, Q3, Q4, Q5, Q6, Q7)
+D4 <- D4[-c(1,2),]
+names(D4) <- c("First_Name", "Last_Name", "Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6")
+D4 <- unite(D4, Person, First_Name, Last_Name, sep = "_", remove = TRUE)
+D4 <- as.data.frame(apply(D4,2,function(x)gsub('\\s+', '',x)))
+D4 <- data.frame(lapply(D4, function(x) {gsub("QMSSGR5067", "QMSS5067", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("G5067", "QMSS5067", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("G5072", "QMSS5072", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("IFSF4090002", "IFSF4090", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("QMSSG5015", "QMSS5015", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("EDPS4021001", "EDPS4021", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("EDPS4002001", "EDPS4002", x)}))
+D4 <- data.frame(lapply(D4, function(x) {gsub("QMSS-QMSS5072", "QMSS5072", x)}))
+D4[34, 2] <- "HUDK4050"
+D4[34, 3] <- "HUDM4125"
+D4[34, 4] <- "HUDM5026"
+D4[34, 5] <- "HUDM5126"
+D4
+D5 <- gather(D4, "Student", "Class", 2:7, na.rm=T)
+D5
+D6 <- D5[,-c(2)]
+D6
+D6 <- mutate(D6, Count = 1)
+D6
+D6[63:64, 3] <- 0
+D6[116:117, 3] <- 0
+D6[146, 3] <- 0
+D6[160:161, 3] <- 0
+D6[169:170, 3] <- 0
+D6[182, 3] <- 0
+D6[186, 3] <- 0
+D6[195, 3] <- 0
+D6[199, 3] <- 0
+D6[211, 3] <- 0
+D6[213:231, 3] <- 0
+D6[233, 3] <- 0
+D6[235:242, 3] <- 0
+D6[244:246, 3] <- 0
+D6[248:249, 3] <- 0
+D6[251:252, 3] <- 0
+D6[254:255, 3] <- 0
+D6[257:260, 3] <- 0
+D6[262, 3] <- 0
+D6[264:313, 3] <- 0
+D6[315:318, 3] <- 0
+D6
+D7 <- D6[-c(63:64,116:117,146, 160:161,169:170,182,186,195,199,211,213:231,233,235:242,244:246,248:249,251:252,254:255,257:260,262,264:313,315:318),]
+D7
+```
+
+```{r}
+D8 <- spread(D7, Class, Count)
+# Consider removing HUDK4050
+
+D8[,2:56][is.na(D8[,2:56])] <- 0
+D8
+row.names(D8) <-D8$Person
+D8$Person <- NULL
+D8<-as.matrix(D8)
+# D8 <- sapply(D8, as.numeric)
+D9 <- t(D8)
+D10 <- D8%*%D9
+D10
+```
+
+```{r}
+g2 <- graph_from_adjacency_matrix(D10)
+plot(g2,layout=layout.fruchterman.reingold)
+```
 
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
-
+```{r}
+betweenness(g2)
+(max(betweenness(g2)))
+# XUDIAN_ZHANG is the most central person in the network
+degree(g2)
+(max(degree(g2)))
+# Lintong_Li has the most relationships
+```
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
