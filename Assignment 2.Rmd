@@ -1,10 +1,18 @@
-# Assignment 2 - Social Network Analysis
+# Assignment 2 - Social Network Analysis  ###Chengxuan Hu
 
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+```{r}
+# install.packages("igraph")
+library(igraph)
+```
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
 
+```{r}
+D1<- read.csv("discipline-data.csv", header=TRUE)
+```
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
 ```{r}
@@ -81,11 +89,22 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
 
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
 
-````
+```
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+
+```{r}
+EDGESTD <- count(D2, stid)
+names(EDGESTD) <- c("id","count")
+EDGETCH<- count(D2,tid)
+names(EDGETCH) <- c("id","count")
+total<- bind_rows(EDGESTD,EDGETCH)
+VERTEX2<-full_join(VERTEX, total, by="id")
+g2 <- graph.data.frame(total, directed=TRUE, vertices=VERTEX2)
+plot(g2,layout=layout.fruchterman.reingold, vertex.color=VERTEX2$gender, vertex.size=VERTEX2$count+10)
+```
 
 
 
@@ -93,7 +112,66 @@ In Part II your task is to [look up](http://igraph.org/r/) in the igraph documen
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+```{r}
+# install.packages("tidyr")
+library(tidyr)
+# install.packages("dplyr")
+library(dplyr)
+### select required data
+D3<- read.csv("hudk4050-classes.csv", header=TRUE)
+D3<-select(D3,Q8,Q9,Q1,Q3,Q4,Q5,Q6,Q7)
+### combine name
+D4<- D3 %>% unite("Name",Q8:Q9, sep=" ", remove=FALSE)
+D5<-select(D4,Name,Q1,Q3,Q4,Q5,Q6,Q7)
+D6<-drop(D5[3:55,])
+attach(D6)
+```
+
+```{r}
+### gather
+D7<- gather(D6,classnumber,value=class,2:7)
+### modify classes
+D7$class<-gsub("[a[[:space:]]","",D7$class)
+D7$class[67]<-"IFSF4090"
+D7$class[120]<-"EDPS4002"
+D7$class[34]<-"HUDK4050"
+D7$class[87]<-"HUDM4125"
+D7$class[140]<-"HUDM5026"
+D7$class[193]<-"HUDM5126"
+D8<-D7[which(D7$class!=""),]
+D9<-D8[,-2]
+D9<-D9 %>% filter(class!="HUDK4050")
+### mutate & spread
+D10<-mutate(D9,count=1)
+attach(D10)
+D11<-spread(D10,key=class,value=count)
+D11[is.na(D11)]<-0
+row.names(D11)<-D11$Name
+D11<-D11[,-1]
+### person-class matrix
+D11
+```
+
+```{r}
+D12<-as.matrix(D11)
+D13<-D12 %*% t(D12)
+diag(D13)<-NA
+### person-person matrix
+D13
+```
+
+```{r}
+### graph
+g3<-graph.adjacency(D13,mode="undirected")
+plot(g3, layout=layout.fruchterman.reingold)
+```
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+### Who is the most central person in the network?
+which(degree(g3)==max(degree(g3)))  ## Lintong Li
+which(betweenness(g3)==max(betweenness(g3)))   ## Yujun Zhang 
+```
 
 ### To Submit Your Assignment
 
