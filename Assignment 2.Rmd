@@ -104,18 +104,36 @@ Now practice with data from our class. Please create a **person-network** with t
 
 ````{r partiii}
 library(tidyverse)
+library(igraph)
 MX1 <- read.csv("hudk4050-classes.csv", header=TRUE, as.is = TRUE)
 MX1 <- unite(MX1,"name",Last.Name,First.Name, sep = ", ")
 MX1 <- MX1 %>% mutate_all(funs(gsub(".*4050","",.))) %>%
-  gather("class_number","course_num",2:7)
-MX1 <- MX1[!MX1$course_num==""] 
-  
+  mutate_all(funs(gsub("\\s+","",.))) %>%
+  gather("class_number","course_num",2:7) %>%
+  select(-class_number)
 
+MX1 <- MX1[!(MX1$course_num=="" | MX1$course_num==" "),] 
 
+MX1$count <- c(1)
+MX2 <- MX1 %>% spread(course_num,count,fill="0") %>%
+  remove_rownames %>% column_to_rownames(var="name")
+MX2 <- as.matrix(MX2)
+class(MX2) <- "numeric"
+MX3 <- MX2 %*% t(MX2)
+diag(MX3) <- NA
 
+g2 <- graph.adjacency(MX3,mode="undirected")
+plot(g2,layout=layout.fruchterman.reingold, vertex.size=10)
 
 ````
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+#Li,Lintong
+
+````{r final piece}
+degree(g2)
+
+betweenness(g2)
+````
 
 ### To Submit Your Assignment
 
