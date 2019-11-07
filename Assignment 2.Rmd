@@ -89,12 +89,32 @@ plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.widt
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
 
+````{r part II}
+
+vert_color <- ifelse(VERTEX$group == "teacher","springgreen","slateblue")
+plot(g,edge.arrow.size=.3, layout=layout.fruchterman.reingold, vertex.color=vert_color, vertex.size= 2 * degree(g))
+
+````
+
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
+````{r partiii}
+library(tidyverse)
+MX1 <- read.csv("hudk4050-classes.csv", header=TRUE, as.is = TRUE)
+MX1 <- unite(MX1,"name",Last.Name,First.Name, sep = ", ")
+MX1 <- MX1 %>% mutate_all(funs(gsub(".*4050","",.))) %>%
+  gather("class_number","course_num",2:7)
+MX1 <- MX1[!MX1$course_num==""] 
+  
+
+
+
+
+````
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
 ### To Submit Your Assignment
