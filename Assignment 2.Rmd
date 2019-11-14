@@ -19,82 +19,92 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
-
 D2 <- select(D1, tid, stid)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
-
 EDGE <- count(D2, tid, stid)
-
 names(EDGE) <- c("from", "to", "count")
-
 ```
 
 EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
 
 ```{r}
-
 #First we will separate the teachers from our original data frame
 V.TCH <- select(D1, tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
-
 #Now repeat this process for the students
 V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
-
 #Make sure that the student and teacher data frames have the same variables names
 names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
-
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
-
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
 
 ```{r}
 #Load the igraph package
-
 library(igraph)
-
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
-
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
-
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
-
 plot(g,layout=layout.fruchterman.reingold)
-
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
-
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
-
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
-
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-
 ````
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
-
+```{r}
+(X1<- count(D1, stid))
+(X2<- count(D1, tid))
+names(X2) <- c("stid","n")
+X3 <- rbind(X1,X2)
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender,vertex.size = X3$n+15)
+```
 
 
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
-
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(igraph)
+DC1 <- read_csv("hudk4050-classes.csv")
+#View(hudk4050_classes)
+DC2 <- unite(DC1, "First Name", "Last Name", col = name, sep = " ")
+DC3 <- DC2 %>% gather(classnum, classcode, `Class 1`, `Class 2`, `Class 3`, `Class 4`, `Class 5`, `Class 6`) %>% select(-c(classnum))
+DC3$classcode = gsub(" ", "", DC3$classcode)
+DC3 <- DC3 %>% filter(classcode != "HUDK4050") %>% filter(name != "ZIMO CHEN")
+DC3$Count = 1
+DC4 <- DC3 %>% spread(classcode,Count)
+row.names(DC4) = DC4$name
+DC4$name <- NULL
+DC4 = ifelse(is.na(DC4), 0, 1)
+DC5 = as.matrix(DC4)
+DC6 = DC5 %*% t(DC5)
+diag(DC6) <- NA
+g3 = graph.adjacency(DC6, mode = "undirected")
+plot(g3, layout=layout.fruchterman.reingold)
+```
 Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
 
+
+```
 ### To Submit Your Assignment
 
 Please submit your assignment by first "knitting" your RMarkdown document into an html file and then comit, push and pull request both the RMarkdown file and the html file.
