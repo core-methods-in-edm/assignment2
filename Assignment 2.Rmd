@@ -3,7 +3,12 @@
 ## Part I
 Start by installing the "igraph" package. Once you have installed igraph, load the package.
 
+
 Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+```{r}
+D1 <- read.csv("discipline-data.csv")
+```
+
 
 Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
 
@@ -19,81 +24,131 @@ First we will isolate the variables that are of interest: tid and stid
 
 ```{r}
 library(dplyr)
-
 D2 <- select(D1, tid, stid)
 ```
 
 Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
 
 ```{r}
-
 EDGE <- count(D2, tid, stid)
-
 names(EDGE) <- c("from", "to", "count")
-
 ```
 
-EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
+EDGE is your edge list . Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
 
 ```{r}
-
 #First we will separate the teachers from our original data frame
 V.TCH <- select(D1, tid, t.gender, t.expertise)
 #Remove all the repeats so that we just have a list of each teacher and their characteristics
 V.TCH <- unique(V.TCH)
 #Add a variable that describes that they are teachers
 V.TCH$group <- "teacher"
-
 #Now repeat this process for the students
 V.STD <- select(D1, stid, s.gender, s.major)
 V.STD <- unique(V.STD)
 V.STD$group <- "student"
-
 #Make sure that the student and teacher data frames have the same variables names
 names(V.TCH) <- c("id", "gender", "topic", "group")
 names(V.STD) <- c("id", "gender", "topic", "group")
-
 #Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
 VERTEX <- bind_rows(V.TCH, V.STD)
-
 ```
 
 Now we have both a Vertex and Edge list it is time to plot our graph!
 
 ```{r}
 #Load the igraph package
-
 library(igraph)
-
 #First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
-
 g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
-
 #Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
-
 plot(g,layout=layout.fruchterman.reingold)
-
 #There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
-
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
-
 #We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
-
 plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
-
 ````
 
 ## Part II
 
 In Part II your task is to [look up](http://igraph.org/r/) in the igraph documentation and create a graph that sizes the student vertices in terms of the number of disciplinary actions they have recieved, and the teachers in terms of the number of disciplinary actions they have given out.
+```{r}
 
 
+Vt1<-EDGE%>%group_by(to)%>%summarise(sum(count))
 
+Vt2<-EDGE%>%group_by(from)%>%summarise(sum(count))
+
+names(Vt1)<-c("id","count")
+
+names(Vt2)<-c("id","count")
+
+vertex1<-bind_rows(Vt2,Vt1)
+
+g<-graph.data.frame(EDGE,directed = TRUE,vertices = vertex1)
+
+plot(g,layout=layout.fruchterman.reingold,
+     edge.arrow.size=0.6,
+     edge.length=EDGE$count*10,
+
+     vertex.size=vertex1$count*2.5)
+
+
+```
+```{r}
+library(dplyr)
+```
+
+```
+```
 ## Part III
 
 Now practice with data from our class. Please create a **person-network** with the data set hudk4050-classes.csv. To create this network you will need to create a person-class matrix using the tidyr functions and then create a person-person matrix using `t()`. You will then need to plot a matrix rather than a data frame using igraph.
 
-Once you have done this, also [look up](http://igraph.org/r/) how to generate the following network metrics: betweeness centrality and dregree. **Who is the most central person in the network?**
+
+```{r}
+J3 <- read.csv("hudk4050-classes.csv")
+library(dplyr)
+library(tidyr)
+##Combine name
+J3 <- J3 %>% unite(Name, First.Name, Last.Name, remove = TRUE, sep=" ")
+J3<-J3[-1,]
+##Gather
+J4<-gather(J3,Name,Class)
+J4[,1]<-J3$Name
+##Tidy
+J4$Class<-gsub(pattern = "\\s",replacement = "",J4$Class)
+cnt<-ifelse(J4$Class=="",J4$count<-0,J4$count<-1)
+J4$count<-cnt
+classes<-unique(J4$Class)
+J4[34,2]<-"HUDK4050"
+J4[87,2]<-"HUDM4125"
+J4[140,2]<-"HUDM5026"
+J4[193,2]<-"HUDM5126"
+J5<-J4[!J4$Class=="",]
+J5<-spread(J5,Class,count,fill=0)
+J5<-select(J5,-HUDK4050)
+##Matrix
+m1<-as.matrix(J5)
+row.names(m1)<-J5$Name
+m1<-m1[,-1]
+m1<-apply(m1,2,as.numeric)
+m2<-m1%*%t(m1)
+row.names(m2)<-J5$Name
+m1<-m1[,-1]
+m1<-apply(m1,2,as.numeric)
+m2<-m1%*%t(m1)
+row.names(m2)<-J5$Name
+colnames(m2)<-J5$Name
+diag(m2)<-NA
+##Graph
+library(igraph)
+m<-graph.adjacency(m2,mode="undirected")
+library(RColorBrewer)
+V(m)$cex<-0.6
+plot(m,layout=layout.fruchterman.reingold,vertex.color=rainbow(8),vertex.label.cex=0.7)
+```
+
 
 ### To Submit Your Assignment
 
