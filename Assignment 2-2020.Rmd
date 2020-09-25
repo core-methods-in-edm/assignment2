@@ -1,0 +1,203 @@
+---
+title: "Assignment 2"
+author: "Charles Lang"
+date: "September 24, 2020"
+output: html_document
+---
+#Part I
+
+## Data Wrangling
+In the hackathon a project was proposed to collect data from student video watching, a sample of this data is available in the file video-data.csv.
+
+stid = student id
+year = year student watched video
+participation = whether or not the student opened the video
+watch.time = how long the student watched the video for
+confusion.points = how many times a student rewatched a section of a video
+key,points = how many times a student skipped or increased the speed of a video
+
+```{r}
+#Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
+
+#Load the package(s) you just installed
+
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+
+D1 <- read.csv("video-data.csv", header = TRUE)
+
+#Create a data frame that only contains the years 2018
+D2 <- filter(D1, year == 2018)
+```
+
+## Histograms
+```{r}
+#Generate a histogram of the watch time for the year 2018
+
+hist(D2$watch.time)
+
+#Change the number of breaks to 100, do you get the same impression?
+
+hist(D2$watch.time, breaks = 100)
+
+#Cut the y-axis off at 10
+
+hist(D2$watch.time, breaks = 100, ylim = c(0,10))
+
+#Restore the y-axis and change the breaks so that they are 0-5, 5-20, 20-25, 25-35
+
+hist(D2$watch.time, breaks = c(0,5,20,25,35))
+
+```
+
+## Plots
+```{r}
+#Plot the number of confusion points against the watch time
+
+plot(D1$confusion.points, D1$watch.time)
+
+#Create two variables x & y
+x <- c(1,3,2,7,6,4,4)
+y <- c(2,4,2,3,2,4,3)
+
+#Create a table from x & y
+table1 <- table(x,y)
+
+#Display the table as a Barplot
+barplot(table1)
+
+#Create a data frame of the average total key points for each year and plot the two against each other as a lines
+
+D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
+
+plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
+
+#Create a boxplot of total enrollment for three students
+D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
+#The drop levels command will remove all the schools from the variable with no data  
+D4 <- droplevels(D4)
+boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
+```
+## Pairs
+```{r}
+#Use matrix notation to select columns 2, 5, 6, and 7
+D5 <- D1[,c(2,5,6,7)]
+#Draw a matrix of plots for every combination of variables
+pairs(D5)
+```
+## Part II
+
+1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
+
+```{r}
+#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
+#pmax sets a maximum value, pmin sets a minimum value
+#round rounds numbers to whole number values
+#sample draws a random samples from the groups vector according to a uniform distribution
+
+
+```
+
+2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
+
+```{r}
+
+```
+
+
+3. Create a new variable that groups the scores according to the breaks in your histogram.
+
+```{r}
+#cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+
+```
+
+4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
+
+```{r}
+library(RColorBrewer)
+#Let's look at the available palettes in RColorBrewer
+
+#The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
+#Make RColorBrewer palette available to R and assign to your bins
+
+#Use named palette in histogram
+
+```
+
+
+5. Create a boxplot that visualizes the scores for each interest group and color each interest group a different color.
+
+```{r}
+#Make a vector of the colors from RColorBrewer
+
+```
+
+
+6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
+
+```{r}
+
+```
+
+7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
+
+```{r}
+
+
+```
+
+
+8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
+
+```{r}
+
+```
+
+
+9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
+
+```{r}
+
+```
+
+# Part III - Analyzing Swirl
+
+## Data 
+
+In this repository you will find data describing Swirl activity from the class so far this semester. Please connect RStudio to this repository.
+
+### Instructions
+  
+1. Insert a new code block
+2. Create a data frame from the `swirl-data.csv` file called `DF1`
+
+The variables are:
+
+`course_name` - the name of the R course the student attempted  
+`lesson_name` - the lesson name  
+`question_number` - the question number attempted
+`correct` - whether the question was answered correctly  
+`attempt` - how many times the student attempted the question  
+`skipped` - whether the student skipped the question  
+`datetime` - the date and time the student attempted the question  
+`hash` - anonymyzed student ID  
+
+3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+
+4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+
+5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
+
+6. Convert `DF3` to this format  
+
+7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+
+8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+
+9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+
+10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+
+Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
