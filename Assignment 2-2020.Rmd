@@ -1,10 +1,10 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
-date: "September 24, 2020"
+author: "Yi Chen"
+date: "September 26, 2020"
 output: html_document
 ---
-#Part I
+# Part I
 
 ## Data Wrangling
 In the hackathon a project was proposed to collect data from student video watching, a sample of this data is available in the file video-data.csv.
@@ -16,7 +16,7 @@ watch.time = how long the student watched the video for
 confusion.points = how many times a student rewatched a section of a video
 key,points = how many times a student skipped or increased the speed of a video
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
 
 #Load the package(s) you just installed
@@ -26,6 +26,7 @@ library(tidyr)
 library(dplyr)
 
 D1 <- read.csv("video-data.csv", header = TRUE)
+str(D1)
 
 #Create a data frame that only contains the years 2018
 D2 <- filter(D1, year == 2018)
@@ -86,30 +87,48 @@ D5 <- D1[,c(2,5,6,7)]
 #Draw a matrix of plots for every combination of variables
 pairs(D5)
 ```
+
 ## Part II
 
 1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
 
 ```{r}
-#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
-#pmax sets a maximum value, pmin sets a minimum value
-#round rounds numbers to whole number values
-#sample draws a random samples from the groups vector according to a uniform distribution
+set.seed(3356)
+simulated_data <- data.frame(
+  "performance" = rnorm(n = 100,mean = 75,sd = 20),
+  "group" = factor(sample(c("sport", "music", "nature", "literature"),100,replace = T))
+)
 
 
+simulated_data <- simulated_data %>%
+  mutate(performance = pmax(performance,0)) %>%
+  mutate(performance = pmin(performance,100)) %>%
+  mutate(performance = round(performance,2)) %>%
+  add_column(Sid = 1:100) %>%
+  select(Sid,group,performance)
+
+head(simulated_data)
 ```
 
-2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
+2. Using base *R commands*, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
-
+hist(simulated_data$performance,
+     xlim = c(30,100),
+     breaks = 7,
+     main = "Histogram of Student Scores",
+     xlab = "Score",
+     ylab = "Density")
 ```
 
 
 3. Create a new variable that groups the scores according to the breaks in your histogram.
 
 ```{r}
-#cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+simulated_data <- simulated_data %>% mutate(
+  score_group =cut(simulated_data$performance,breaks = 7,labels = letters[1:7])
+)
+head(simulated_data)
 
 ```
 
@@ -117,13 +136,17 @@ pairs(D5)
 
 ```{r}
 library(RColorBrewer)
-#Let's look at the available palettes in RColorBrewer
+#display.brewer.all()
+#display.brewer.all(colorblindFriendly = TRUE)
+#display.brewer.pal(n = 7, name = 'Dark2')
 
-#The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
-#Make RColorBrewer palette available to R and assign to your bins
-
-#Use named palette in histogram
-
+hist(simulated_data$performance,
+     xlim = c(30,100),
+     breaks = 7,
+     main = "Histogram of Student Scores",
+     xlab = "Score",
+     ylab = "Density",
+     col =brewer.pal(n = 7, name = 'Dark2'))
 ```
 
 
@@ -131,20 +154,28 @@ library(RColorBrewer)
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
-
+  boxplot(simulated_data$performance~simulated_data$score_group, 
+          xlab = "Score Level", 
+          ylab = "Performance (Score)",
+          main = "boxplot of score over levels",
+          col = brewer.pal(n = 7, name = 'Dark2'))
 ```
 
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
-
+simulated_data <- simulated_data %>%
+  mutate(logins = sample(1:25,100,replace = T))
+head(simulated_data)
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
-
+plot(simulated_data$performance, simulated_data$logins,type = "p",
+     ylab = "logins",xlab = "Performance (Scores)",
+     main = "Scatter Plot of Logins and Scores")
 
 ```
 
@@ -152,15 +183,20 @@ library(RColorBrewer)
 8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
 
 ```{r}
-
+plot(AirPassengers, type = "l")
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
-
+pairs(iris)
+str(iris)
+pairs(iris %>% select(-Species))
 ```
+
+*Answer*: Pearson correlation is designed for the continuous variables. In iris dataset, species is a categoriacal variable, which is not suitable for correaltion. All the other variables are fine.
+
 
 # Part III - Analyzing Swirl
 
@@ -172,6 +208,12 @@ In this repository you will find data describing Swirl activity from the class s
   
 1. Insert a new code block
 2. Create a data frame from the `swirl-data.csv` file called `DF1`
+```{r}
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+str(DF1)
+head(DF1)
+```
+
 
 The variables are:
 
@@ -185,19 +227,94 @@ The variables are:
 `hash` - anonymyzed student ID  
 
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+DF2 <- DF1 %>%
+  select(hash,lesson_name,attempt)
+head(DF2)
+```
+
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+```{r}
+DF3 <- DF2 %>%
+  group_by(hash,lesson_name) %>%
+  summarise(attemp = sum(attempt))
+head(DF3)
+```
+
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
+| harsh | lesson_name_1 | lesson_name_2 | lesson_name_3 | lesson_name_4 |
+| :---: | :-----------: | :-----------: | :-----------: | :-----------: |
+| 2864  | 29            | 49            | 51            | 116           |
+
 6. Convert `DF3` to this format  
+```{r}
+unique(DF3$lesson_name)
+## there is one lesson name missing
+DF3 %>% filter(lesson_name=="") %>%
+  distinct(attemp)
+## there is no real information for lesson name as ""
+## consequently, I will drop these records
+DF3 <- DF3 %>% drop_na()
+
+DF3_wide <- DF3 %>%
+  pivot_wider(names_from = lesson_name,values_from = attemp)
+head(DF3)
+
+```
+
 
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+DF4 <- DF1 %>%
+  select(hash,lesson_name,correct)
+head(DF4)
+```
+
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4 <- DF4 %>%
+  mutate(correct = ifelse(correct=="TRUE",1,0))
+head(DF4)
+```
+
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+# for missing correct, I will score then as false
+# the mean score is the correct of attempts
+DF5 <- DF1 %>%
+  replace_na(list(correct="FALSE")) %>%
+  mutate(correct = ifelse(correct=="TRUE",1,0)) %>%
+  group_by(hash,lesson_name) %>%
+  summarise(average_score = round(mean(correct) * 100,2)) %>%
+  arrange(desc(average_score))
+head(DF5)
+```
+
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+```{r}
+library(lubridate)
+DF6 <- DF1 %>%
+  drop_na() %>%
+  mutate(datetime =
+          format(
+            as.POSIXct(datetime, origin = '1970-01-01', tz = 'GMT'),"%m-%d-%Y")) %>%
+  replace_na(list(correct="FALSE")) %>%
+  mutate(correct = ifelse(correct=="TRUE",1,0)) %>%
+  group_by(datetime) %>%
+  summarise(average_correct = round(mean(correct),2)) %>%
+  arrange(datetime)
+head(DF6)
+
+
+## note: there are some very small time-steamps, which may be error.
+```
+
+
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
