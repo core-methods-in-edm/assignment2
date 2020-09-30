@@ -54,7 +54,6 @@ hist(D2$watch.time, breaks = c(0,5,20,25,35))
 ## Plots
 ```{r}
 #Plot the number of confusion points against the watch time
-
 plot(D1$confusion.points, D1$watch.time)
 
 #Create two variables x & y
@@ -68,13 +67,13 @@ table1 <- table(x,y)
 barplot(table1)
 
 #Create a data frame of the average total key points for each year and plot the two against each other as a lines
-
 D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
 
 plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
 
 #Create a boxplot of total enrollment for three students
 D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
+
 #The drop levels command will remove all the schools from the variable with no data  
 D4 <- droplevels(D4)
 boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
@@ -83,6 +82,7 @@ boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
 ```{r}
 #Use matrix notation to select columns 2, 5, 6, and 7
 D5 <- D1[,c(2,5,6,7)]
+
 #Draw a matrix of plots for every combination of variables
 pairs(D5)
 ```
@@ -96,12 +96,57 @@ pairs(D5)
 #round rounds numbers to whole number values
 #sample draws a random samples from the groups vector according to a uniform distribution
 
+#https://www.youtube.com/watch?v=zAYzAZwufKI
+#https://www.youtube.com/watch?v=CM7ncRGlViE
+
+library(TruncatedNormal)
+
+set.seed(100)
+StudID = round(runif(100,100000,999999))
+
+#set.seed(101)
+#Score = round(rnorm(100,75,15, max(100), min(0)))
+
+set.seed(101)
+#i used the rtnorm function, instead of rnorm, to keep scores from going above 100
+Score2 = round(rtnorm(100, lb = 0, ub = 100, sd = 15, mu = 75))
+
+set.seed(102)
+ClassificationOptions <- c("sport", "music", "nature", "literature")
+Classification <- sample(ClassificationOptions, 100, replace=TRUE)
+
+SDS1 <- data.frame(StudID, Score2, Classification)
+
 
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(Score2)
+
+hist(Score2, main = "Distribution of Scores", breaks = 100)
+
+#https://stackoverflow.com/questions/38810453/how-to-plot-a-histogram-with-different-colors-in-r
+
+hist(Score2, main = "Distribution of Scores", breaks = 100, col = 3)
+
+#colors http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
+
+hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c("steelblue", "steelblue1", "steelblue2", "steelblue3", "steelblue4"))
+
+
+#couldn't get this one going... yet
+#library(ggplot2)
+#
+#ScoreGroup = ifelse(Score < 70, "<70", ifelse(Score < 91, "70-90", ">90"))
+#
+#ggplot(Score, aes(Score, fill = ScoreGroup)) + geom.histogram() + 
+#    scale_fill_manual(values = c("<70" = "#CD7F32",
+#                                 "70-90" = "#C0C0C0",
+#                                 ">90" = "gold"))
+       
+       
 
 ```
 
@@ -110,6 +155,10 @@ pairs(D5)
 
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+
+#Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = "A","B","C","D","E","F","G","H","I","K")
+SDS1$Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = c("A","B","C","D","E","F","G","H","I","K"))
+
 
 ```
 
@@ -123,6 +172,14 @@ library(RColorBrewer)
 #Make RColorBrewer palette available to R and assign to your bins
 
 #Use named palette in histogram
+
+#hist(Score2, main = "Distribution of Scores", brewer.pal(10,"Set1"))
+
+
+#hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.pal(10,"Set1"))
+
+
+hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.pal(10,"Set1"))
 
 ```
 
