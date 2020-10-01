@@ -5,6 +5,8 @@ date: "10/1/2020"
 output: html_document
 ---
 
+# Part 1
+
 ```{r}
 #Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
 #Load the package(s) you just installed
@@ -46,10 +48,34 @@ D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
 D4 <- droplevels(D4)
 boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
 ```
+
 ## Pairs
 ```{r}
 #Use matrix notation to select columns 2, 5, 6, and 7
 D5 <- D1[,c(2,5,6,7)]
 #Draw a matrix of plots for every combination of variables
 pairs(D5)
+#Correlations between variables
+cor (D5)
 ```
+
+
+# Part 2
+
+```{r}
+S1a <- function(n, m, s, lwr, upr, nnorm) {
+set.seed(1)
+samp <- rnorm(nnorm, m, s)
+samp <- samp[samp >= lwr & samp <= upr]
+if (length(samp) >= n) {
+return(sample(samp, n))
+}  
+stop(simpleError("Not enough values to sample from. Try increasing nnorm."))
+} 
+S1_a<- S1a(n=100, m=80, s=10, lwr=60, upr=100, nnorm=1000000)
+summary(S1_a)
+
+round(S1_a)
+hist(S1_a, xlim=c(60,100))
+```
+
