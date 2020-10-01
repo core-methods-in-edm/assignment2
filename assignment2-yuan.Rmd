@@ -1,0 +1,29 @@
+---
+title: "Assignment2"
+author: "Cy"
+date: "10/1/2020"
+output: html_document
+---
+
+```{r}
+#Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
+#Load the package(s) you just installed
+library(tidyr)
+D1 <- read.csv("video-data.csv", header = TRUE)
+#Create a data frame that only contains the years 2018
+D2 <- filter(D1, year == 2018)
+```
+
+## Histograms
+```{r}
+#Generate a histogram of the watch time for the year 2018
+hist(D2$watch.time)
+#Change the number of breaks to 100, do you get the same impression?
+hist(D2$watch.time, breaks = 100)
+#Cut the y-axis off at 10
+hist(D2$watch.time, breaks = 100, ylim = c(0,10))
+#Restore the y-axis and change the breaks so that they are 0-5, 5-20, 20-25, 25-35
+hist(D2$watch.time, breaks = c(0,5,20,25,35))
+
+```
+
