@@ -101,7 +101,9 @@ pairs(D5)
 
 library(TruncatedNormal)
 
+#i ended up using these set.seed functions to keep the data from changing every time i ran the block 
 set.seed(100)
+#fancy random student id's
 StudID = round(runif(100,100000,999999))
 
 #set.seed(101)
@@ -159,6 +161,8 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c
 #Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = "A","B","C","D","E","F","G","H","I","K")
 SDS1$Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = c("A","B","C","D","E","F","G","H","I","K"))
 
+#thanks for the letters command... the above looks a bit archaic in comparison!
+
 
 ```
 
@@ -189,12 +193,15 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.
 ```{r}
 #Make a vector of the colors from RColorBrewer
 
+
+
 ```
 
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
+
 
 ```
 
