@@ -108,3 +108,40 @@ interest.col <- brewer.pal(4, "Pastel1")
 boxplot(S1$scores~S1$interest, col = interest.col, xlab = "Student Interest Group", ylab = "Student Scores")
 ```
 
+## simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
+```{r}
+logins <- seq(from=1, to=25)
+S1$logins <-sample(logins, 100, replace = TRUE)
+```
+
+## Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
+```{r}
+plot(S1$scores, S1$logins, col = interest.col, ylab = "Student Logins", xlab = "Student Scores")
+```
+
+## Plot a line graph of the the airline passengers over time using the AirPassengers data set.
+```{r}
+plot(AirPassengers)
+```
+
+## Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
+```{r}
+pairs(iris)
+cor(iris$Sepal.Length,iris$Petal.Length)
+cor(iris$Petal.Length,iris$Petal.Width)
+cor(iris$Sepal.Length,iris$Sepal.Width)
+```
+
+# Part 3
+
+## Import data
+```{r}
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+```
+
+## Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+myvars <- c("hash", "lesson_name", "attempt")
+DF2 <- DF1[myvars]
+```
+
