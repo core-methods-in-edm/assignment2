@@ -54,7 +54,6 @@ hist(D2$watch.time, breaks = c(0,5,20,25,35))
 ## Plots
 ```{r}
 #Plot the number of confusion points against the watch time
-
 plot(D1$confusion.points, D1$watch.time)
 
 #Create two variables x & y
@@ -68,13 +67,13 @@ table1 <- table(x,y)
 barplot(table1)
 
 #Create a data frame of the average total key points for each year and plot the two against each other as a lines
-
 D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
 
 plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
 
 #Create a boxplot of total enrollment for three students
 D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
+
 #The drop levels command will remove all the schools from the variable with no data  
 D4 <- droplevels(D4)
 boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
@@ -83,6 +82,7 @@ boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
 ```{r}
 #Use matrix notation to select columns 2, 5, 6, and 7
 D5 <- D1[,c(2,5,6,7)]
+
 #Draw a matrix of plots for every combination of variables
 pairs(D5)
 ```
@@ -96,12 +96,59 @@ pairs(D5)
 #round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
 
+#https://www.youtube.com/watch?v=zAYzAZwufKI
+#https://www.youtube.com/watch?v=CM7ncRGlViE
+
+library(TruncatedNormal)
+
+#i ended up using these set.seed functions to keep the data from changing every time i ran the block 
+set.seed(100)
+#fancy random student id's
+StudID = round(runif(100,100000,999999))
+
+#set.seed(101)
+#Score = round(rnorm(100,75,15, max(100), min(0)))
+
+set.seed(101)
+#i used the rtnorm function, instead of rnorm, to keep scores from going above 100
+Score = round(rtnorm(100, lb = 0, ub = 100, sd = 15, mu = 75))
+
+set.seed(102)
+InterestOptions <- c("sport", "music", "nature", "literature")
+Interest <- sample(InterestOptions, 100, replace=TRUE)
+
+SDS1 <- data.frame(StudID, Score, Interest)
+
 
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(Score)
+
+hist(Score, main = "Distribution of Scores", breaks = 100)
+
+#https://stackoverflow.com/questions/38810453/how-to-plot-a-histogram-with-different-colors-in-r
+
+hist(Score, main = "Distribution of Scores", breaks = 100, col = 3)
+
+#colors http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
+
+hist(Score, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c("steelblue", "steelblue1", "steelblue2", "steelblue3", "steelblue4"))
+
+
+#couldn't get this one going... yet
+#library(ggplot2)
+#
+#ScoreGroup = ifelse(Score < 70, "<70", ifelse(Score < 91, "70-90", ">90"))
+#
+#ggplot(Score, aes(Score, fill = ScoreGroup)) + geom.histogram() + 
+#    scale_fill_manual(values = c("<70" = "#CD7F32",
+#                                 "70-90" = "#C0C0C0",
+#                                 ">90" = "gold"))
+       
+       
 
 ```
 
@@ -111,18 +158,35 @@ pairs(D5)
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 
+#ScoreCuts <- cut(Score, breaks = c(seq(0,100,10)), labels = "A","B","C","D","E","F","G","H","I","K")
+SDS1$ScoreCuts <- cut(Score, breaks = c(seq(0,100,10)), labels = c("A","B","C","D","E","F","G","H","I","K"))
+
+#thanks for the letters command... the above looks a bit archaic in comparison!
+
+
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
 
 ```{r}
 library(RColorBrewer)
+
+display.brewer.all()
+
 #Let's look at the available palettes in RColorBrewer
 
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
 #Make RColorBrewer palette available to R and assign to your bins
 
 #Use named palette in histogram
+
+HistPalette <- brewer.pal(10, "Set3")
+
+hist(SDS1$Score, main = "Distribution of Scores", xlab = "Scores", ylab = "Frequency", col=HistPalette)
+
+
+
+
 
 ```
 
@@ -132,6 +196,25 @@ library(RColorBrewer)
 ```{r}
 #Make a vector of the colors from RColorBrewer
 
+library(RColorBrewer)
+
+InterestColors <- brewer.pal(4, "Accent")
+
+
+boxplot(Score ~ Interest,                      #x and y
+        SDS1,                                  #dataframe
+        col = InterestColors,                  #color palette
+        main = "Boxplot of Interest Groups")   #title
+
+Pal <- colorRampPalette(c("lightblue", "darkblue"))
+PalRange <- Pal(4)
+
+boxplot(Score ~ Interest,                     #x and y
+        SDS1,                                 #dataframe
+        col = PalRange,                       #color palette
+        main = "Boxplot of Interest Groups")  #title
+
+
 ```
 
 
@@ -139,11 +222,39 @@ library(RColorBrewer)
 
 ```{r}
 
+SDS1$Logins <- sample(1:25, 100, replace = TRUE)
+
+
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
+
+Pal <- colorRampPalette(c("red", "blue"))
+PalRange <- Pal(4)
+#View(PalRange)
+
+SDS1$InterestColor <- 0
+SDS1$InterestColor[SDS1$Interest=="sport"] <- "#FF0000"
+SDS1$InterestColor[SDS1$Interest=="music"] <- "#AA0055"
+SDS1$InterestColor[SDS1$Interest=="nature"] <- "#5500AA"
+SDS1$InterestColor[SDS1$Interest=="literature"] <- "#0000FF"
+
+plot(SDS1$Logins, SDS1$Score,
+     main = "Scores vs Logins", 
+     xlab = "Logins", ylab = "Scores",
+     col=SDS1$InterestColor,
+     pch = 19)
+
+#i believe there's a problem with the plot above, i intended that the plot would color the datapoints with the color specified in $InterestColor...  when i create a plot with a filter for 'interest==sport'... all the points should be the same color... and they're not... :(
+
+plot(SDS1$Logins[SDS1$Interest=="sport"],
+     SDS1$Score[SDS1$Interest=="sport"],
+     main = "Scores vs Logins  Interest=sport",
+     xlab = "Logins", ylab = "Scores",
+     col=SDS1$InterestColor,
+     pch = 19)
 
 
 ```
@@ -153,12 +264,23 @@ library(RColorBrewer)
 
 ```{r}
 
+data.frame(AirPassengers)
+
+plot(AirPassengers, col="red")
+
+
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
+
+data.frame(iris)
+
+pairs(iris)
+
+#it would seem comparing petal.length to petal.width produce the most clustered arrangement... the longer larger the petal.length, the larger the petal.width (i.e. smooth line of data)... i would start there to look for correlations.  
 
 ```
 
@@ -171,7 +293,12 @@ In this repository you will find data describing Swirl activity from the class s
 ### Instructions
   
 1. Insert a new code block
-2. Create a data frame from the `swirl-data.csv` file called `DF1`
+```{r}
+
+```
+
+
+2. Create a data frame from the `` file called `DF1`
 
 The variables are:
 
@@ -184,20 +311,107 @@ The variables are:
 `datetime` - the date and time the student attempted the question  
 `hash` - anonymyzed student ID  
 
+
+```{r}
+
+DF1 <- read.csv("swirl-data.csv",TRUE)
+
+
+```
+
+
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
 
+```{r}
+
+
+DF2 <- data.frame(DF1$hash, DF1$lesson_name, DF1$attempt)
+
+names(DF2) <- c("hash", "lesson_name", "attempt")
+
+```
+
+
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+
+```{r}
+
+
+GroupBy_LessonName <- group_by(DF2, lesson_name)
+
+DF3 <- summarise(GroupBy_LessonName, 
+                          TotalAttempts = sum(attempt, na.rm = TRUE))
+
+
+
+```
+
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
 
+```{r}
+
+#needed to add a blank column for the plot command
+DF3$blank <-0
+
+plot(DF3)
+
+hist(DF3$TotalAttempts)
+
+
+#this section is still... no bueno...
+#stay tuned
+
+
+```
+
+
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+
+```{r}
+
+#stay tuned
+
+```
+
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
 
+
+```{r}
+
+#stay tuned
+
+```
+
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+
+
+```{r}
+
+#stay tuned
+
+```
+
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
+
+```{r}
+
+#stay tuned
+
+```
+
+
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
+
+
+
+```{r}
+
+#stay tuned
+
+```
