@@ -111,13 +111,13 @@ StudID = round(runif(100,100000,999999))
 
 set.seed(101)
 #i used the rtnorm function, instead of rnorm, to keep scores from going above 100
-Score2 = round(rtnorm(100, lb = 0, ub = 100, sd = 15, mu = 75))
+Score = round(rtnorm(100, lb = 0, ub = 100, sd = 15, mu = 75))
 
 set.seed(102)
-ClassificationOptions <- c("sport", "music", "nature", "literature")
-Classification <- sample(ClassificationOptions, 100, replace=TRUE)
+InterestOptions <- c("sport", "music", "nature", "literature")
+Interest <- sample(InterestOptions, 100, replace=TRUE)
 
-SDS1 <- data.frame(StudID, Score2, Classification)
+SDS1 <- data.frame(StudID, Score, Interest)
 
 
 ```
@@ -125,17 +125,17 @@ SDS1 <- data.frame(StudID, Score2, Classification)
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
-hist(Score2)
+hist(Score)
 
-hist(Score2, main = "Distribution of Scores", breaks = 100)
+hist(Score, main = "Distribution of Scores", breaks = 100)
 
 #https://stackoverflow.com/questions/38810453/how-to-plot-a-histogram-with-different-colors-in-r
 
-hist(Score2, main = "Distribution of Scores", breaks = 100, col = 3)
+hist(Score, main = "Distribution of Scores", breaks = 100, col = 3)
 
 #colors http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
 
-hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c("steelblue", "steelblue1", "steelblue2", "steelblue3", "steelblue4"))
+hist(Score, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c("steelblue", "steelblue1", "steelblue2", "steelblue3", "steelblue4"))
 
 
 #couldn't get this one going... yet
@@ -158,8 +158,8 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), col = c
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 
-#Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = "A","B","C","D","E","F","G","H","I","K")
-SDS1$Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = c("A","B","C","D","E","F","G","H","I","K"))
+#ScoreCuts <- cut(Score, breaks = c(seq(0,100,10)), labels = "A","B","C","D","E","F","G","H","I","K")
+SDS1$ScoreCuts <- cut(Score, breaks = c(seq(0,100,10)), labels = c("A","B","C","D","E","F","G","H","I","K"))
 
 #thanks for the letters command... the above looks a bit archaic in comparison!
 
@@ -170,6 +170,9 @@ SDS1$Score2Cuts <- cut(Score2, breaks = c(seq(0,100,10)), labels = c("A","B","C"
 
 ```{r}
 library(RColorBrewer)
+
+display.brewer.all()
+
 #Let's look at the available palettes in RColorBrewer
 
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
@@ -177,13 +180,13 @@ library(RColorBrewer)
 
 #Use named palette in histogram
 
-#hist(Score2, main = "Distribution of Scores", brewer.pal(10,"Set1"))
+HistPalette <- brewer.pal(10, "Set3")
+
+hist(SDS1$Score, main = "Distribution of Scores", xlab = "Scores", ylab = "Frequency", col=HistPalette)
 
 
-#hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.pal(10,"Set1"))
 
 
-hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.pal(10,"Set1"))
 
 ```
 
@@ -193,6 +196,23 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.
 ```{r}
 #Make a vector of the colors from RColorBrewer
 
+library(RColorBrewer)
+
+InterestColors <- brewer.pal(4, "Accent")
+
+
+boxplot(Score ~ Interest,                      #x and y
+        SDS1,                                  #dataframe
+        col = InterestColors,                  #color palette
+        main = "Boxplot of Interest Groups")   #title
+
+Pal <- colorRampPalette(c("lightblue", "darkblue"))
+PalRange <- Pal(4)
+
+boxplot(Score ~ Interest,                     #x and y
+        SDS1,                                 #dataframe
+        col = PalRange,                       #color palette
+        main = "Boxplot of Interest Groups")  #title
 
 
 ```
@@ -202,12 +222,40 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.
 
 ```{r}
 
+SDS1$Logins <- sample(1:25, 100, replace = TRUE)
+
 
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
+
+Pal <- colorRampPalette(c("red", "blue"))
+PalRange <- Pal(4)
+#View(PalRange)
+
+SDS1$InterestColor <- 0
+SDS1$InterestColor[SDS1$Interest=="sport"] <- "#FF0000"
+SDS1$InterestColor[SDS1$Interest=="music"] <- "#AA0055"
+SDS1$InterestColor[SDS1$Interest=="nature"] <- "#5500AA"
+SDS1$InterestColor[SDS1$Interest=="literature"] <- "#0000FF"
+
+plot(SDS1$Logins, SDS1$Score,
+     main = "Scores vs Logins", 
+     xlab = "Logins", ylab = "Scores",
+     col=SDS1$InterestColor,
+     pch = 19)
+
+#i believe there's a problem with the plot above, i intended that the plot would color the datapoints with the color specified in $InterestColor...  when i create a plot with a filter for 'interest==sport'... all the points should be the same color... and they're not... :(
+
+plot(SDS1$Logins[SDS1$Interest=="sport"],
+     SDS1$Score[SDS1$Interest=="sport"], 
+     main = "Scores vs Logins", 
+     xlab = "Logins", ylab = "Scores",
+     col=SDS1$InterestColor,
+     pch = 19)
+
 
 
 ```
@@ -217,12 +265,16 @@ hist(Score2, main = "Distribution of Scores", breaks = c(seq(0,100,10)), brewer.
 
 ```{r}
 
+
+
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
+
+
 
 ```
 
