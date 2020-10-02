@@ -7,6 +7,7 @@ output: html_document
 
 # Part 1
 
+## Import data
 ```{r}
 #Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
 #Load the package(s) you just installed
@@ -62,6 +63,7 @@ cor (D5)
 
 # Part 2
 
+## Create a simulated data set
 ```{r}
 S1a <- function(n, m, s, lwr, upr, nnorm) {
 set.seed(1)
@@ -72,10 +74,37 @@ return(sample(samp, n))
 }  
 stop(simpleError("Not enough values to sample from. Try increasing nnorm."))
 } 
-S1_a<- S1a(n=100, m=80, s=10, lwr=60, upr=100, nnorm=1000000)
-summary(S1_a)
+scores <- S1a(n=100, m=75, s=10, lwr=50, upr=100, nnorm=1000000)
+round(scores)
+interest <- c("sport", "music", "nature", "literature")
+S1 <- data.frame(scores)
+S1$interest <-sample(interest, 100, replace = TRUE)
+summary(S1)
 
-round(S1_a)
-hist(S1_a, xlim=c(60,100))
+```
+
+## draw a histogram of the scores
+```{r}
+hist(S1$scores, breaks = 10，xlim=c(50,100))
+```
+
+## Create a new variable that groups the scores according to the breaks in your histogram
+```{r}
+label1 <- letters [1:10]
+S1$breaks <- cut(S1$scores, breaks = 10, labels = label1)
+```
+
+## design a pallette and assign it to the groups in your data on the histogram
+```{r}
+library (RColorBrewer)
+display.brewer.all()
+S1$colors <- brewer.pal(10, "Set3")
+hist(S1$scores, col = S1$colors)
+```
+
+## Create a boxplot that visualizes the scores for each interest group and color each interest group a different color
+```{r}
+interest.col <- brewer.pal(4, "Pastel1")
+boxplot(S1$scores~S1$interest, col = interest.col, xlab = "Student Interest Group", ylab = "Student Scores")
 ```
 
