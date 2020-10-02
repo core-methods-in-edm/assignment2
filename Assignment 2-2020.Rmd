@@ -250,12 +250,11 @@ plot(SDS1$Logins, SDS1$Score,
 #i believe there's a problem with the plot above, i intended that the plot would color the datapoints with the color specified in $InterestColor...  when i create a plot with a filter for 'interest==sport'... all the points should be the same color... and they're not... :(
 
 plot(SDS1$Logins[SDS1$Interest=="sport"],
-     SDS1$Score[SDS1$Interest=="sport"], 
-     main = "Scores vs Logins", 
+     SDS1$Score[SDS1$Interest=="sport"],
+     main = "Scores vs Logins  Interest=sport",
      xlab = "Logins", ylab = "Scores",
      col=SDS1$InterestColor,
      pch = 19)
-
 
 
 ```
@@ -265,7 +264,9 @@ plot(SDS1$Logins[SDS1$Interest=="sport"],
 
 ```{r}
 
+data.frame(AirPassengers)
 
+plot(AirPassengers, col="red")
 
 ```
 
@@ -274,7 +275,11 @@ plot(SDS1$Logins[SDS1$Interest=="sport"],
 
 ```{r}
 
+data.frame(iris)
 
+pairs(iris)
+
+#it would seem comparing petal.length to petal.width produce the most clustered arrangement... the longer larger the petal.length, the larger the petal.width (i.e. smooth line of data)... i would start there to look for correlations.  
 
 ```
 
