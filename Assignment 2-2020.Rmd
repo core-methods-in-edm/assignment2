@@ -186,7 +186,7 @@ plot(AirPassengers)
 
 ```{r}
 pairs(iris)
-#We can run correlation on  Sepal.Length~Petal.Length,  Sepal.Length~Petal.Width,  Sepal.Width~Petal.Length,  Sepal.Width~ Petal.Width,  Petal.Length~Petal.Width.
+#It is appropriate to run correlation on  Sepal.Length~Petal.Length,  Sepal.Length~Petal.Width,  Petal.Length~Petal.Width.
 ```
 
 # Part III - Analyzing Swirl
