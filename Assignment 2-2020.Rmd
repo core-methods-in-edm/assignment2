@@ -91,18 +91,24 @@ pairs(D5)
 1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
 
 ```{r}
-#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
-#pmax sets a maximum value, pmin sets a minimum value
+#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 15
+score = rnorm(100, 75, 15)
+#filter 
+S1 = data.frame(score)
+S1 = filter(S1, score<=100)
+S2 = data.frame(score = rep(100, 100 - length(S1[,1])))
+S3 = rbind(S1,S2)
 #round rounds numbers to whole number values
+S3 = round(S3)
 #sample draws a random samples from the groups vector according to a uniform distribution
-
-
+groups = sample(c('sport', 'music', 'nature', 'literature'), 100, replace = TRUE)
+sample = data.frame(score, groups)
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
-
+hist(score, breaks = 15)
 ```
 
 
@@ -110,7 +116,7 @@ pairs(D5)
 
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
-
+(rcut = cut(score, 15, labels = letters[1:15]))
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
@@ -118,12 +124,20 @@ pairs(D5)
 ```{r}
 library(RColorBrewer)
 #Let's look at the available palettes in RColorBrewer
-
+brewer.pal.info
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
+
 #Make RColorBrewer palette available to R and assign to your bins
+cv = c(brewer.pal(4, "Accent"), brewer.pal(11, "Set3"))
 
 #Use named palette in histogram
-
+cgroups = groups
+cgroups[cgroups[] == "literature"] = cv[1]
+cgroups[cgroups[] == "sport"] = cv[2]
+cgroups[cgroups[] == "music"] = cv[3]
+cgroups[cgroups[] == "nature"] = cv[4]
+sample$colors = cgroups
+hist(sample$score, col = cv, breaks = 15)
 ```
 
 
@@ -132,26 +146,34 @@ library(RColorBrewer)
 ```{r}
 #Make a vector of the colors from RColorBrewer
 
+boxplot(sample$score~sample$groups, col = cv)
 ```
 
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
+nlogin = rnorm(100, 15, 5)
+df = data.frame(nlogin)
+df = filter(df, nlogin<=25 & nlogin>=1)
+df1 = data.frame(nlogin = rep(20, 100 - length(df[,1])))
+df2 = rbind(df,df1)
 
+#round rounds numbers to whole number values
+df2 = round(df2)
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
-
-
+plot(df2$nlogin, sample$score,col = cgroups, main = "the relationships between logins and scores")                             
 ```
 
 
 8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
 
 ```{r}
+plot(AirPassengers)
 
 ```
 
@@ -159,7 +181,8 @@ library(RColorBrewer)
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
-
+plot(iris)
+#The relationship between petal length and petal width.
 ```
 
 # Part III - Analyzing Swirl
@@ -187,16 +210,58 @@ The variables are:
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
-
+```{r}
+DF1 = read.csv("swirl-data.csv")
+DF2 = cbind(DF1["hash"], DF1["lesson_name"], DF1["attempt"])
+(DF3 <- DF2 %>% 
+    group_by(lesson_name, hash) %>% 
+    summarise(sum_attempt = sum(attempt), .groups = 'drop')  
+  )
+```
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
+```{r}
+DF3_LN = DF1['lesson_name'][!duplicated(DF1['lesson_name']),]
+DF3_H = DF1['hash'][!duplicated(DF1['hash']),]
+x = matrix(NA, nrow = length(DF3_H), ncol = length(DF3_LN), dimnames = list(DF3_H, DF3_LN))
+for (r in 1:length(DF3$lesson_name)){
+  a = DF3[r,,]$lesson_name
+  if(a == ''){
+   a = 15
+  }
+  x[toString(DF3[r,,]$hash), a] = DF3[r,,]$sum_attempt
+}
+DF3C = data.frame(x)
+```
 
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4 = cbind(DF1["hash"], DF1["lesson_name"], DF1["correct"])
+DF4$correct[is.na(DF4[,3])] = 0
+
+DF4$correct[DF4[,3]=="TRUE"] = 1
+DF4$correct[DF4[,3]=="FALSE"] = 0
+
+DF4$correct = as.numeric(DF4$correct)
+DF4$correct[is.na(DF4[,3])] = 0 
+```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5B = cbind(DF1["hash"], DF1["course_name"], DF1["correct"])
+DF5B$correct[is.na(DF5B[,3])] = 0
+DF5B$correct[DF5B[,3]=="TRUE"] = 1
+DF5B$correct[DF5B[,3]=="FALSE"] = 0
+DF5B$correct = as.numeric(DF5B$correct)
+DF5B$correct[is.na(DF5B[,3])] = 0 
+(DF5 <- DF5B %>% 
+    group_by(hash, course_name) %>% 
+    summarise(mean.correct = mean(correct), .groups = 'drop')
+  )
+```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
