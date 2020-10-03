@@ -249,7 +249,10 @@ DF4$correct<-as.numeric(DF4$correct)
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
 ```{r}
-DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_correct = mean(correct,na.rm = TRUE))
+DF5<-data.frame(DF1[,c("hash","course_name","correct")])
+DF5$correct <- ifelse(DF5$correct == 'TRUE', 1, 0)
+DF5$correct<-as.numeric(DF5$correct)
+DF5 <- DF5 %>% group_by(hash, course_name) %>% summarise(mean_correct = mean(correct,na.rm = TRUE))
 
 ```
 

@@ -581,7 +581,10 @@ DF4$correct&lt;-as.numeric(DF4$correct)</code></pre>
 <ol start="9" style="list-style-type: decimal">
 <li>Create a new data frame called <code>DF5</code> that provides a mean score for each student on each course</li>
 </ol>
-<pre class="r"><code>DF5 &lt;- DF4 %&gt;% group_by(hash, lesson_name) %&gt;% summarise(mean_correct = mean(correct,na.rm = TRUE))</code></pre>
+<pre class="r"><code>DF5&lt;-data.frame(DF1[,c(&quot;hash&quot;,&quot;course_name&quot;,&quot;correct&quot;)])
+DF5$correct &lt;- ifelse(DF5$correct == &#39;TRUE&#39;, 1, 0)
+DF5$correct&lt;-as.numeric(DF5$correct)
+DF5 &lt;- DF5 %&gt;% group_by(hash, course_name) %&gt;% summarise(mean_correct = mean(correct,na.rm = TRUE))</code></pre>
 <pre><code>## `summarise()` regrouping output by &#39;hash&#39; (override with `.groups` argument)</code></pre>
 <ol start="10" style="list-style-type: decimal">
 <li><strong>Extra credit</strong> Convert the <code>datetime</code> variable into month-day-year format and create a new data frame (<code>DF6</code>) that shows the average correct for each day</li>
