@@ -153,7 +153,7 @@ hist(S3$score, breaks=10,col = S3$colors)
 ```{r}
 #Make a vector of the colors from RColorBrewer
 interest.col<-brewer.pal(4,"Dark2")
-boxplot(score~interest,S3,col = interest.col)
+boxplot(score~interest,S3,col = interest.col) 
 ```
 
 
@@ -252,8 +252,7 @@ DF4$correct<-as.numeric(DF4$correct)
 DF5<-data.frame(DF1[,c("hash","course_name","correct")])
 DF5$correct <- ifelse(DF5$correct == 'TRUE', 1, 0)
 DF5$correct<-as.numeric(DF5$correct)
-DF5 <- DF5 %>% group_by(hash, course_name) %>% summarise(mean_correct = mean(correct,na.rm = TRUE))
-
+DF5 <- DF5 %>% group_by(hash, course_name) %>% summarise(mean_score= mean(correct,na.rm = TRUE))
 ```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
