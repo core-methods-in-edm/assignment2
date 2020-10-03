@@ -145,3 +145,12 @@ myvars <- c("hash", "lesson_name", "attempt")
 DF2 <- DF1[myvars]
 ```
 
+## Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+```{r}
+library(dbplyr)
+DF3 <- DF2 %>% 
+  group_by(lesson_name,hash，.add=FALSE) %>% 
+  summarise(Attempt = sum(attempt))
+
+```
+
