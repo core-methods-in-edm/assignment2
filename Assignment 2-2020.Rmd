@@ -1,7 +1,7 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
-date: "September 24, 2020"
+author: "Guoliang Xu"
+date: "October 1st, 2020"
 output: html_document
 ---
 #Part I
@@ -91,17 +91,35 @@ pairs(D5)
 1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
 
 ```{r}
-#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
-#pmax sets a maximum value, pmin sets a minimum value
-#round rounds numbers to whole number values
-#sample draws a random samples from the groups vector according to a uniform distribution
+#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 15
+#filter() can be used to set a maximum and minimum value
+#round() rounds numbers to whole number values
+#sample() draws a random samples from the groups vector according to a uniform distribution
+set.seed(1)
+score<-rnorm(100,75,15)
+S1<-data.frame(score)
+library(dplyr)
+S1<-filter(S1,score <= 100)
 
+
+S2<-data.frame(rep(100,3))
+names(S2)<-"score"
+S3<-bind_rows(S1,S2)
+
+S3$score<-round(S3$score,0)
+
+
+interest<-c("sport","music","nature","literature")
+S3$interest<-sample(interest,100,replace = TRUE)
+S3$stid<-seq(1,100,1)
 
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(S3$score)
+hist(S3$score,breaks = 10)
 
 ```
 
@@ -111,6 +129,9 @@ pairs(D5)
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 
+label<-letters[1:10]
+S3$breaks<-cut(S3$score, breaks = 10, labels = label)
+
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
@@ -118,12 +139,12 @@ pairs(D5)
 ```{r}
 library(RColorBrewer)
 #Let's look at the available palettes in RColorBrewer
-
+display.brewer.all()
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
 #Make RColorBrewer palette available to R and assign to your bins
-
+S3$colors<-brewer.pal(10,"Set3")
 #Use named palette in histogram
-
+hist(S3$score, breaks=10,col = S3$colors)
 ```
 
 
@@ -131,35 +152,41 @@ library(RColorBrewer)
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
-
+interest.col<-brewer.pal(4,"Dark2")
+boxplot(score~interest,S3,col = interest.col)
 ```
 
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
+S3$login<-sample(1:25,100,replace = TRUE)
 
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
-
-
+S3$col1<-ifelse(S3$interest=="music","red",ifelse(S3$interest=="literature","green",ifelse(S3$interest=="sport","pink","blue")))
+plot(S3$login,S3$score,col=S3$col1,main="relationships between logins and scores",xlab="Logins",ylab="Score")
+#Alternative
+plot(S3$login,S3$score,col=interest.col,main="relationships between logins and scores",xlab="Logins",ylab="Score")
 ```
 
 
 8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
 
 ```{r}
-
+Ap<-data.frame(AirPassengers)
+plot(AirPassengers)
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
-
+pairs(iris)
+#We can run correlation on  Sepal.Length~Petal.Length,  Sepal.Length~Petal.Width,  Sepal.Width~Petal.Length,  Sepal.Width~ Petal.Width,  Petal.Length~Petal.Width.
 ```
 
 # Part III - Analyzing Swirl
@@ -183,21 +210,56 @@ The variables are:
 `skipped` - whether the student skipped the question  
 `datetime` - the date and time the student attempted the question  
 `hash` - anonymyzed student ID  
+```{r}
+DF1<-read.csv("swirl-data.csv",header = TRUE)
+```
 
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+DF2<-data.frame(DF1[,c("hash","lesson_name","attempt")])
+
+```
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+```{r}
+
+DF3<-DF2%>%group_by(hash,lesson_name)%>%summarise(sum_attempt=sum(attempt))
+
+```
+
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
+```{r}
+DF3<-DF3%>%spread(lesson_name, sum_attempt)
+```
 
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+DF4 <- data.frame(DF1[,c("hash","lesson_name","correct")])
+```
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4$correct <- ifelse(DF4$correct == 'TRUE', 1, 0)
+DF4$correct<-as.numeric(DF4$correct)
+
+```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_correct = mean(correct,na.rm = TRUE))
+
+```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+```{r}
+DF6<- data.frame(DF1[,c( 7, 4)])
+DF6$correct <- ifelse(DF6$correct == "TRUE", 1, 0)
+DF6$datetime = as.Date(as.POSIXct(DF6$datetime,tz="UTC", origin="1970-01-01"))
+DF6$datetime = format(DF6$datetime, format="%m-%d-%Y")
+DF6 <- DF6 %>% group_by(datetime) %>% summarise(average.correct = mean(correct,na.rm = TRUE))
+```
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
