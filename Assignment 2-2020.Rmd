@@ -23,7 +23,7 @@ key,points = how many times a student skipped or increased the speed of a video
 
 #Load the package(s) you just installed
 
-library(tidyverse)
+#library(tidyverse)
 library(tidyr)
 library(dplyr)
 
@@ -71,7 +71,7 @@ barplot(table1)
 
 #Create a data frame of the average total key points for each year and plot the two against each other as a lines
 
-D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
+D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points), .groups = "keep")
 
 plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
 
@@ -104,7 +104,7 @@ score <- rnorm(100,75,15)
 hist(score,breaks = 30)
 S1 <- data.frame(score)
 
-library(dplyr)
+#library(dplyr)
 S1 <- filter(S1, score <= 100)
 hist(S1$score)
 
@@ -117,8 +117,6 @@ interest <- c("sport", "music", "nature", "liturature")
 S3$interest <- sample(interest, 100, replace = TRUE)
 
 S3$stid <- seq(1,100,1)
-
-
 ```
 
 2. **Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
@@ -155,7 +153,6 @@ hist(S3$score, col = S3$colors)
 #Make a vector of the colors from RColorBrewer
 interest.col <- brewer.pal(4, "BuPu")
 boxplot(score ~ interest, S3, col = interest.col)
-
 ```
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
@@ -179,7 +176,6 @@ plot(AirPassengers, type = "l", xlab = "Date", ylab = "Passenger numbers")
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropriate to run a correlation on? 
 
 ```{r}
-
 plot(iris)
 plot(iris$Sepal.Length,iris$Sepal.Width)
 plot(iris$Petal.Length,iris$Petal.Width)
@@ -192,6 +188,7 @@ plot(iris$Species,iris$Sepal.Length, xlab = "Species", ylab = "Sepal Length")
 plot(iris$Species,iris$Petal.Width, xlab = "Species", ylab = "Petal Width")
 plot(iris$Species,iris$Petal.Length, xlab = "Species", ylab = "Petal Length")
 
+#Which of these relationships is it appropriate to run a correlation on?
 #Correlation between Sepal Length and Width
 corOfSepalLW <- cor(iris$Sepal.Length, iris$Sepal.Width)
 #Correlation between Petal Length and Width
@@ -200,7 +197,6 @@ corOfPetalLW <- cor(iris$Petal.Length, iris$Petal.Width)
 corOfLengthPS <- cor(iris$Petal.Length, iris$Sepal.Length)
 #Correlation between Petal Width and Sepal Width
 corOfWidthPS <- cor(iris$Petal.Width, iris$Sepal.Width)
-
 ```
 
 # Part III - Analyzing Swirl
@@ -238,8 +234,7 @@ DF1 <- read.csv("swirl-data.csv", header = TRUE)
 DF2 <- DF1[,c(2,5,8)]
 
 #4
-DF3 <-  DF2 %>% group_by(lesson_name, hash) %>% summarise(sum_key = sum(attempt))
-
+DF3 <-  DF2 %>% group_by(lesson_name, hash) %>% summarise(sum_key = sum(attempt), .groups = "keep")
 ```
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
@@ -262,25 +257,22 @@ DF4 <- DF1[,c(2,4,8)]
 #8
 #Correct misspelled FALS at line 809 in swirl_data.csv and subsequent DF4 dataframe from DF1
 DF4$correct <- ifelse(DF4$correct == "FALS", "FALSE", DF4$correct)
-#str(DF4$correct)
 
 #Convert the chr that was created with last back to logi
 DF4$correct <- type.convert(DF4$correct) 
-#str(DF4$correct)
 
 #Get rid of the NAs so the next steps do not throw "NAs introduced by coercion"
 DF4 <- DF4[complete.cases(DF4$correct),]
 
 #Converts logi to num so 0s and 1s instead of FALSE and TRUE
 DF4$correct <- as.numeric(DF4$correct) 
-#str(DF4$correct)
 
 ```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
 
 ```{r}
-DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_key = mean(correct))
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_key = mean(correct), .groups = "keep")
 ```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
@@ -296,11 +288,12 @@ DF6 <- DF6[complete.cases(DF6$correct),]
 DF6$correct <- as.numeric(DF6$correct) 
 
 #Creating average correct for each day
-DF6 <- DF6 %>% group_by(datetime) %>% summarise(meanByDay = mean(correct))
+DF6 <- DF6 %>% group_by(datetime, correct) %>% summarise(meanByDay = mean(correct), .groups = "keep")
 
 #Convert 'datetime' to month-day-year by converting the parsed num***
-library(lubridate)
-dateConverted <- mdy_hms(DF6$datetime)
+#library(lubridate)
+#dateConverted <- mdy_hms(DF6$datetime)
+#DF6 <- separate_rows(DF6, DF6$datetime, sep = "0")
 
 ```
 
