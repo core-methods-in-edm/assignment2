@@ -1,11 +1,10 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
-date: "September 24, 2020"
+author: "Rong Sang"
+date: "October 5, 2020"
 output: html_document
 ---
 #Part I
-
 
 ## Data Wrangling
 In the hackathon a project was proposed to collect data from student video watching, a sample of this data is available in the file video-data.csv.
@@ -96,6 +95,7 @@ pairs(D5)
 #filter() can be used to set a maximum and minimum value
 #round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
+
 score <- rnorm(100, 75, 15)
 hist(score, breaks = 30)
 S1 <- data.frame(score)
@@ -138,8 +138,10 @@ hist(S3$score, breaks = 10)
 
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+
 label <- letters[1:10]
 S3$breaks <- cut(S3$score, breaks = 10, labels = label)
+
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
@@ -163,11 +165,9 @@ hist(S3$score, col = S3$colors)
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
-
 interest.col <- brewer.pal(4, "Dark2")
 
 boxplot(score ~ interest, S3, col = interest.col)
-
 ```
 
 
@@ -183,6 +183,7 @@ S3$login <- sample(1:25, 100, replace = TRUE)
 plot(S3$login, S3$score, col = S3$colors, main = "Student Logins vs. Scores")
 
 S3$col1 <- ifelse(S3$interest == "music", "red", "green")
+     
 
 ```
 
@@ -199,6 +200,8 @@ plot(AirPassengers)
 
 ```{r}
 pairs(iris)
+
+
 ```
 
 # Part III - Analyzing Swirl
@@ -235,8 +238,8 @@ DF2 <- select(DF1, 'hash','lesson_name', 'attempt')
 ```
 
 
-4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
 
+4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
 ```{r}
 library(dplyr)
 DF3 <- DF2 %>% group_by(hash, lesson_name) %>% summarise(attempt=sum(attempt))
@@ -244,8 +247,6 @@ DF3 <- DF2 %>% group_by(hash, lesson_name) %>% summarise(attempt=sum(attempt))
 ```
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
-
-
 
 6. Convert `DF3` to this format  
 ```{r}
@@ -261,9 +262,7 @@ DF4 <- select(DF1, 'hash', 'lesson_name', 'correct')
 ```
 
 
-
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
-
 ```{r}
 DF4$correct <- ifelse(DF4$correct == 'TRUE', 1, 0)
 DF4$correct <- as.numeric(DF4$correct)
@@ -271,7 +270,6 @@ DF4$correct <- as.numeric(DF4$correct)
 
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
-
 ```{r}
 DF5 <- select(DF1, 'hash', 'lesson_name', 'correct')
 DF5$correct <- ifelse(DF5$correct == 'TRUE', 1, 0)
@@ -288,7 +286,6 @@ DF6$correct = as.integer(as.logical(DF6$correct))
 DF6 <- na.omit(DF6)
 DF6 = DF6 %>% group_by(datetime) %>% summarise(average=mean(correct))
 ```
-
 
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
