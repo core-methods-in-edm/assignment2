@@ -92,9 +92,9 @@ pairs(D5)
 
 ```{r}
 #rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
-#pmax sets a maximum value, pmin sets a minimum value
-#round rounds numbers to whole number values
-#sample draws a random samples from the groups vector according to a uniform distribution
+#filter() can be used to set a maximum and minimum value
+#round() rounds numbers to whole number values
+#sample() draws a random samples from the groups vector according to a uniform distribution
 
 
 ```
