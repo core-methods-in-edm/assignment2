@@ -91,10 +91,10 @@ pairs(D5)
 1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
 
 ```{r}
-#creates a random sample with a mean of 75 and standard deviation of 20
-#pmax sets a maximum value, pmin sets a minimum value
-#round rounds numbers to whole number values
-#sample draws a random samples from the groups vector according to a uniform distribution
+#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 20
+#filter() can be used to set a maximum and minimum value
+#round() rounds numbers to whole number values
+#sample() draws a random samples from the groups vector according to a uniform distribution
 s_size = 100
 s_mean = 75
 interests <- c("sport","music","nature","literature")
@@ -109,7 +109,6 @@ student_scores = sample(df$score, s_size, replace = TRUE)
 
 student_interests <- sample(interests, s_size, replace = TRUE)
 df <- data.frame(score = student_scores, interest = student_interests)
-
 
 ```
 
