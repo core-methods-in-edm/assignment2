@@ -1,8 +1,10 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
-date: "September 24, 2020"
-output: html_document
+author: "Fei Wang"
+date: "October 6, 2020"
+output:
+  html_document: default
+  pdf_document: default
 ---
 #Part I
 
@@ -31,6 +33,7 @@ D1 <- read.csv("video-data.csv", header = TRUE)
 D2 <- filter(D1, year == 2018)
 ```
 
+
 ## Histograms
 ```{r}
 #Generate a histogram of the watch time for the year 2018
@@ -38,8 +41,9 @@ D2 <- filter(D1, year == 2018)
 hist(D2$watch.time)
 
 #Change the number of breaks to 100, do you get the same impression?
-
 hist(D2$watch.time, breaks = 100)
+#After adding the breaks of 100, the different of frequency looks more dramatic as the first column looks much taller than the rest since it's been divided into smaller segments of watchtime.There are more specific information on how many people there are for different watch time after the change.# 
+
 
 #Cut the y-axis off at 10
 
@@ -50,6 +54,11 @@ hist(D2$watch.time, breaks = 100, ylim = c(0,10))
 hist(D2$watch.time, breaks = c(0,5,20,25,35))
 
 ```
+
+
+
+
+
 
 ## Plots
 ```{r}
@@ -96,13 +105,27 @@ pairs(D5)
 #round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
 
+score <- rnorm(100, 75, 15)
+hist(score,breaks = 30)
+S1 <- data.frame(score)
 
+
+S2 <- data.frame(rep(100,5))
+names(S2) <- c("score")
+S3 <- bind_rows(S1,S2)
+
+interest <- c("sport","music","nature","literature")
+S1$interest <- sample(interest, 100, replace =TRUE)
+S1$stid <- seq(1,100,1)
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(S1$score)
 
+
+hist(S1$score, breaks = 10)
 ```
 
 
@@ -111,19 +134,27 @@ pairs(D5)
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 
+label <- letters[1:10]
+S1$breaks <- cut(S1$score, breaks = 10, labels = label)
+
+letters
+LETTERS
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
 
 ```{r}
-library(RColorBrewer)
+library(RColorBrewer) 
+
 #Let's look at the available palettes in RColorBrewer
+display.brewer.all() 
 
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
 #Make RColorBrewer palette available to R and assign to your bins
+S1$colors <- brewer.pal(10, "Set3") 
 
 #Use named palette in histogram
-
+hist(S1$score, col = S1$colors)
 ```
 
 
@@ -131,35 +162,39 @@ library(RColorBrewer)
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
-
+interest.col <- brewer.pal(4, "Dark2")
+boxplot(score ~ interest, S1, col = interest.col)
 ```
 
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
-
+S1$login <- sample(1:25, 100, replace = TRUE)
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
-
-
+plot(S1$login, S1$score, col = S1$colors, main = "Student Logins vs Scores")
+S1$col1 <- ifelse(S1$interest == "music", "red", "green")
 ```
 
 
 8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
 
 ```{r}
-
+AirPassengers
+plot(AirPassengers)
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
-
+iris
+plot(iris)
+#The one on the third row and fourth column is appropriate to run a correlation on, which is the relationship between Petal.Width and Petal.Length. 
 ```
 
 # Part III - Analyzing Swirl
@@ -172,6 +207,11 @@ In this repository you will find data describing Swirl activity from the class s
   
 1. Insert a new code block
 2. Create a data frame from the `swirl-data.csv` file called `DF1`
+```{r}
+
+DF1 <- read_csv("swirl-data.csv")
+```
+
 
 The variables are:
 
@@ -185,19 +225,54 @@ The variables are:
 `hash` - anonymyzed student ID  
 
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+DF2 <- DF1[c("hash", "lesson_name", "attempt")]
+```
+
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+```{r}
+DF3 <- DF2 %>% group_by(hash, lesson_name) %>% summarise(attempt = sum(attempt), .groups = "keep")
+
+```
+
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
 
+```{r}
+library(tidyverse)
+library(tidyr)
+DF7 <- DF3 %>% spread(key = lesson_name, value = attempt)
+head(DF7)
+```
+
+
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+DF4 <- DF1[c("hash","lesson_name","correct")]
+
+```
+
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4$correct <- ifelse(DF4$correct == TRUE, 1, 0)
+```
+
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(score = mean(correct), .groups = "keep")
+
+```
+
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
+```{r}
+
+```
+
