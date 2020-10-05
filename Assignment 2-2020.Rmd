@@ -214,13 +214,18 @@ The variables are:
 DF1 <- read.csv("swirl-data.csv", header = TRUE)
 DF2 <- select(DF1, "hash","lesson_name", "attempt")
 DF3 <- DF2 %>% group_by(lesson_name, hash) %>% summarise(sum_attempt = sum(attempt))
+```
+![Q5scratch](4050part3Q5.jpg)
 
+```{r}
 DF3 %>% spread(lesson_name, sum_attempt)
 
 DF4 <- DF1[,c(8,2,4)]
 DF4$correct <- ifelse(DF4$correct == "TRUE", 1, 0)
 
-DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(score = mean(correct))
+DF5a <- select(DF1, "hash","course_name","correct")
+DF5a$correct <- ifelse(DF5a$correct == "TRUE", 1, 0)
+DF5 <- DF5a %>% group_by(hash, course_name) %>% summarise(score = mean(correct))
 
 DF6a <- select(DF1, "datetime","correct")
 DF6a$datetime <- as.Date.POSIXct(DF6a$datetime,tz = "UTC", origin = "2000-01-01")
