@@ -104,7 +104,7 @@ library(dplyr)
 S1 <- filter(S1, score <= 100)
 hist(S1$score)
 
-S2 <- data.frame(rep(100,2))
+S2 <- data.frame(rep(100,100-nrow(S1)))
 names(S2) <- "score"
 S3 <- bind_rows(S1,S2)
 
@@ -217,19 +217,31 @@ DF2 <- DF1[,c(8,2,5)]
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
 ```{r}
-group_by(DF2, lesson_name)
-DF3 <- summarise(DF2, sum_attempts = sum(DF2$attemps))
+DF3 <- DF2 %>% group_by(hash, lesson_name) %>% summarise(sum_attempts = sum(attempt))
 ```
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
+![Q5](q5.jpg)
 
 6. Convert `DF3` to this format  
+```{r}
+
+```
 
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+DF4 <- DF1[,c(8,2,4)]
+```
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4[,3] = ifelse(DF4$correct == "TRUE", 1, 0)
+```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_correct = mean(correct))
+```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
