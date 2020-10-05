@@ -1,0 +1,203 @@
+---
+title: "Assignment2"
+author: "Cy"
+date: "10/1/2020"
+output: html_document
+---
+```{r, include=FALSE}
+library(tidyr)
+library(dplyr)
+library (RColorBrewer)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+
+```{r, include=FALSE}
+library(tidyr)
+library(dplyr)
+library (RColorBrewer)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+# Part 1
+
+## Import data
+```{r}
+#Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
+#Load the package(s) you just installed
+D1 <- read.csv("video-data.csv", header = TRUE)
+#Create a data frame that only contains the years 2018
+D2 <- filter(D1, D1$year == 2018)
+```
+
+## Histograms
+```{r}
+#Generate a histogram of the watch time for the year 2018
+hist(D2$watch.time)
+#Change the number of breaks to 100, do you get the same impression?
+hist(D2$watch.time, breaks = 100)
+#Cut the y-axis off at 10
+hist(D2$watch.time, breaks = 100, ylim = c(0,10))
+#Restore the y-axis and change the breaks so that they are 0-5, 5-20, 20-25, 25-35
+hist(D2$watch.time, breaks = c(0,5,20,25,35))
+
+```
+## Plots
+```{r}
+#Plot the number of confusion points against the watch time
+plot(D1$confusion.points, D1$watch.time)
+#Create two variables x & y
+x <- c(1,3,2,7,6,4,4)
+y <- c(2,4,2,3,2,4,3)
+#Create a table from x & y
+table1 <- table(x,y)
+#Display the table as a Barplot
+barplot(table1)
+#Create a data frame of the average total key points for each year and plot the two against each other as a lines
+D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
+plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
+#Create a boxplot of total enrollment for three students
+D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
+#The drop levels command will remove all the schools from the variable with no data  
+D4 <- droplevels(D4)
+boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
+```
+
+## Pairs
+```{r}
+#Use matrix notation to select columns 2, 5, 6, and 7
+D5 <- D1[,c(2,5,6,7)]
+#Draw a matrix of plots for every combination of variables
+pairs(D5)
+#Correlations between variables
+cor (D5)
+```
+
+
+# Part 2
+
+## Create a simulated data set
+```{r}
+S1a <- function(n, m, s, lwr, upr, nnorm) {
+set.seed(1)
+samp <- rnorm(nnorm, m, s)
+samp <- samp[samp >= lwr & samp <= upr]
+if (length(samp) >= n) {
+return(sample(samp, n))
+}  
+stop(simpleError("Not enough values to sample from. Try increasing nnorm."))
+} 
+scores <- S1a(n=100, m=75, s=10, lwr=50, upr=100, nnorm=1000000)
+round(scores)
+interest <- c("sport", "music", "nature", "literature")
+S1 <- data.frame(scores)
+S1$interest <-sample(interest, 100, replace = TRUE)
+summary(S1)
+
+```
+
+## draw a histogram of the scores
+```{r}
+hist(S1$scores, breaks = 10，xlim=c(50,100))
+```
+
+## Create a new variable that groups the scores according to the breaks in your histogram
+```{r}
+label1 <- letters [1:10]
+S1$breaks <- cut(S1$scores, breaks = 10, labels = label1)
+```
+
+## design a pallette and assign it to the groups in your data on the histogram
+```{r}
+display.brewer.all()
+S1$colors <- brewer.pal(10, "Set3")
+hist(S1$scores, col = S1$colors)
+```
+
+## Create a boxplot that visualizes the scores for each interest group and color each interest group a different color
+```{r}
+interest.col <- brewer.pal(4, "Pastel1")
+boxplot(S1$scores~S1$interest, col = interest.col, xlab = "Student Interest Group", ylab = "Student Scores")
+```
+
+## simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
+```{r}
+logins <- seq(from=1, to=25)
+S1$logins <-sample(logins, 100, replace = TRUE)
+```
+
+## Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
+```{r}
+plot(S1$scores, S1$logins, col = interest.col, ylab = "Student Logins", xlab = "Student Scores")
+```
+
+## Plot a line graph of the the airline passengers over time using the AirPassengers data set.
+```{r}
+plot(AirPassengers)
+```
+
+## Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
+```{r}
+pairs(iris)
+cor(iris$Sepal.Length,iris$Petal.Length)
+cor(iris$Petal.Length,iris$Petal.Width)
+cor(iris$Sepal.Length,iris$Sepal.Width)
+```
+
+# Part 3
+
+## Import data
+```{r}
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+```
+
+## Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+myvars <- c("hash", "lesson_name", "attempt")
+DF2 <- DF1[myvars]
+```
+
+## Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+```{r}
+DF3 <- DF2 %>% 
+  group_by(lesson_name,hash，.add=FALSE) %>% 
+  summarise(Attempt = sum(attempt))
+
+```
+
+## Convert `DF3` to the format that shows the lesson names as column names  
+```{r}
+DF3a <- DF3 %>% spread(lesson_name, Attempt) 
+```
+
+## Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+myvars2 <- c("hash", "lesson_name", "correct")
+DF4 <- DF1[myvars2]
+```
+
+## Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4[,3] <- ifelse(DF4[,3] == "TRUE", 1, 0)
+```
+
+## Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarize(mean_score = mean(correct, na.rm = TRUE))
+
+```
+
+<<<<<<< HEAD
+## Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+```{r}
+DF6 <- DF1
+DF6[,7] <- as.Date(as.POSIXct(DF1$datetime, origin = "1973-01-01"),format = "%m-%d-%y")
+DF6[,4] <- ifelse(DF6[,4] == "TRUE", 1, 0)
+DF6 <- DF6 %>% 
+  group_by (datetime) %>%
+  summarize(ave_correct = mean(correct, na.rm=T))
+
+```
+
+=======
+>>>>>>> 2123adeca89577aa45bb536688c877f776ad46ce
