@@ -22,8 +22,9 @@ key,points = how many times a student skipped or increased the speed of a video
 #Load the package(s) you just installed
 
 library(tidyverse)
-library(tidyr)
-library(dplyr)
+library(knitr)
+# library(tidyr)
+# library(dplyr)
 
 D1 <- read.csv("video-data.csv", header = TRUE)
 
@@ -95,6 +96,18 @@ pairs(D5)
 #filter() can be used to set a maximum and minimum value
 #round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
+data = round(rnorm(500, 75, 15));
+data = data.frame(data)
+data = filter(data, data<=100)
+data = slice(data,1:100)
+
+data_score = sample(c("sport", "music", "nature", "literature"),100, replace = TRUE)
+data_score = data.frame(data_score)
+
+stid = seq(1:100)
+stid = data.frame(stid)
+
+data_final = cbind(stid, data, data_score)
 
 
 ```
@@ -102,6 +115,7 @@ pairs(D5)
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(data_final$data, breaks = 10)
 
 ```
 
@@ -110,6 +124,8 @@ pairs(D5)
 
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+label <- letters[1:10]
+data_final$breaks <- cut(data_final$data, breaks = 10, labels = label)
 
 ```
 
@@ -118,12 +134,13 @@ pairs(D5)
 ```{r}
 library(RColorBrewer)
 #Let's look at the available palettes in RColorBrewer
-
+display.brewer.all()
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
 #Make RColorBrewer palette available to R and assign to your bins
 
 #Use named palette in histogram
-
+data_final$colors <- brewer.pal(10, "Set3")
+hist(data_final$data,breaks = 10,col = data_final$colors)
 ```
 
 
@@ -131,6 +148,8 @@ library(RColorBrewer)
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
+data_score.col <- brewer.pal(4, "Paired")
+boxplot(data~data_score, data_final, col = data_score.col)
 
 ```
 
@@ -138,13 +157,13 @@ library(RColorBrewer)
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
-
+data_final$login <- sample(1:25, 100, replace = TRUE)
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
-
+plot(data_final$login, data_final$data, main = "Login vs. Score")
 
 ```
 
@@ -152,14 +171,18 @@ library(RColorBrewer)
 8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
 
 ```{r}
-
+AirPassengers <- data_frame(AirPassengers)
+plot(AirPassengers)
 ```
 
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
-
+pairs(iris)
+# Sepal.Length, Petal.Length
+# Sepal.Width, Petal.Length
+# Petal.Length, Petal.Length
 ```
 
 # Part III - Analyzing Swirl
@@ -184,20 +207,50 @@ The variables are:
 `datetime` - the date and time the student attempted the question  
 `hash` - anonymyzed student ID  
 
+```{r}
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+```
+
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+```{r}
+DF2 <- data_frame(DF1[,c("hash","lesson_name","attempt")])
+```
 
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+
+```{r}
+DF3 <- DF2 %>% group_by(hash,lesson_name) %>% summarise(sum = sum(attempt))
+```
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
 
+```{r}
+spread(DF3,lesson_name, sum)
+```
+
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+
+```{r}
+DF4 <- data_frame(DF1 [,c ("hash", "lesson_name", "correct")])
+```
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
 
+```{r}
+DF4$correct <- ifelse(DF4$correct == TRUE, 1, 0)
+```
+
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean=mean(correct))
+```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
+
+
+
