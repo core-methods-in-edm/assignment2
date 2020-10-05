@@ -546,15 +546,14 @@ DF4 &lt;- DF1[myvars2]</code></pre>
 <div id="create-a-new-data-frame-called-df5-that-provides-a-mean-score-for-each-student-on-each-course" class="section level2">
 <h2>Create a new data frame called <code>DF5</code> that provides a mean score for each student on each course</h2>
 <pre class="r"><code>DF5 &lt;- DF4 %&gt;% group_by(hash, lesson_name) %&gt;% summarize(mean_score = mean(correct, na.rm = TRUE))</code></pre>
-</div>
-<div id="convert-the-datetime-variable-into-month-day-year-format-and-create-a-new-data-frame-df6-that-shows-the-average-correct-for-each-day" class="section level2">
-<h2>Convert the <code>datetime</code> variable into month-day-year format and create a new data frame (<code>DF6</code>) that shows the average correct for each day</h2>
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD ## Convert the <code>datetime</code> variable into month-day-year format and create a new data frame (<code>DF6</code>) that shows the average correct for each day</p>
 <pre class="r"><code>DF6 &lt;- DF1
 DF6[,7] &lt;- as.Date(as.POSIXct(DF1$datetime, origin = &quot;1973-01-01&quot;),format = &quot;%m-%d-%y&quot;)
 DF6[,4] &lt;- ifelse(DF6[,4] == &quot;TRUE&quot;, 1, 0)
 DF6 &lt;- DF6 %&gt;% 
   group_by (datetime) %&gt;%
   summarize(ave_correct = mean(correct, na.rm=T))</code></pre>
+<p>======= &gt;&gt;&gt;&gt;&gt;&gt;&gt; 2123adeca89577aa45bb536688c877f776ad46ce</p>
 </div>
 </div>
 

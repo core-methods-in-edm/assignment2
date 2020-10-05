@@ -4,6 +4,12 @@ author: "Cy"
 date: "10/1/2020"
 output: html_document
 ---
+```{r, include=FALSE}
+library(tidyr)
+library(dplyr)
+library (RColorBrewer)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
 
 
 ```{r, include=FALSE}
@@ -181,6 +187,7 @@ DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarize(mean_score = mean(corre
 
 ```
 
+<<<<<<< HEAD
 ## Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 ```{r}
 DF6 <- DF1
@@ -192,4 +199,5 @@ DF6 <- DF6 %>%
 
 ```
 
-
+=======
+>>>>>>> 2123adeca89577aa45bb536688c877f776ad46ce
