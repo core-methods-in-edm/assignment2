@@ -4,6 +4,12 @@ author: "Cy"
 date: "10/1/2020"
 output: html_document
 ---
+```{r, include=FALSE}
+library(tidyr)
+library(dplyr)
+library (RColorBrewer)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
 
 # Part 1
 
@@ -11,10 +17,9 @@ output: html_document
 ```{r}
 #Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
 #Load the package(s) you just installed
-library(tidyr)
 D1 <- read.csv("video-data.csv", header = TRUE)
 #Create a data frame that only contains the years 2018
-D2 <- filter(D1, year == 2018)
+D2 <- filter(D1, D1$year == 2018)
 ```
 
 ## Histograms
@@ -96,7 +101,6 @@ S1$breaks <- cut(S1$scores, breaks = 10, labels = label1)
 
 ## design a pallette and assign it to the groups in your data on the histogram
 ```{r}
-library (RColorBrewer)
 display.brewer.all()
 S1$colors <- brewer.pal(10, "Set3")
 hist(S1$scores, col = S1$colors)
@@ -147,10 +151,31 @@ DF2 <- DF1[myvars]
 
 ## Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
 ```{r}
-library(dbplyr)
 DF3 <- DF2 %>% 
   group_by(lesson_name,hash，.add=FALSE) %>% 
   summarise(Attempt = sum(attempt))
+
+```
+
+## Convert `DF3` to the format that shows the lesson names as column names  
+```{r}
+DF3a <- DF3 %>% spread(lesson_name, Attempt) 
+```
+
+## Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+```{r}
+myvars2 <- c("hash", "lesson_name", "correct")
+DF4 <- DF1[myvars2]
+```
+
+## Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+DF4[,3] <- ifelse(DF4[,3] == "TRUE", 1, 0)
+```
+
+## Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarize(mean_score = mean(correct, na.rm = TRUE))
 
 ```
 
