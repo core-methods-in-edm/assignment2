@@ -238,4 +238,4 @@ DF6$datetime = format(DF6$datetime, format = "%m-%d-%Y")
 DF6 = DF6 %>% group_by(datetime) %>% summarise(average = mean(correct, na.rm = TRUE))
 ```
 
-Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
+Finally use the knit function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
