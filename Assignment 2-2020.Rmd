@@ -71,7 +71,7 @@ barplot(table1)
 
 #Create a data frame of the average total key points for each year and plot the two against each other as a lines
 
-D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points), .groups = "keep")
+D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
 
 plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
 
@@ -96,26 +96,29 @@ pairs(D5)
 
 ```{r}
 #rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 15
-#filter() can be used to set max min value
-#round rounds numbers to whole number values
+#filter() can be used to set max min value and can only work with a data frame, for rows
+#select() for columns
+#round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
 
 score <- rnorm(100,75,15)
 hist(score,breaks = 30)
 S1 <- data.frame(score)
 
-#library(dplyr)
+#Top and tail the scores
 S1 <- filter(S1, score <= 100)
 hist(S1$score)
 
-S2 <- data.frame(rep(100,5)) #
+S2 <- data.frame(rep(100,5)) #repeat 100 5 times and names the column a random name that is not helpful so use the names() command to rename
 names(S2) <- "score"
-S3 <- bind_rows(S1,S2)
+S3 <- bind_rows(S1,S2) #must make sure that the names of the columns and the type match
+
+#S3$score <- ifelse(S3$score >= 100, 100, S3$score)
+
+S3$score <-round(S3$score,0)
 
 interest <- c("sport", "music", "nature", "liturature")
-
 S3$interest <- sample(interest, 100, replace = TRUE)
-
 S3$stid <- seq(1,100,1)
 ```
 
@@ -231,10 +234,10 @@ The variables are:
 DF1 <- read.csv("swirl-data.csv", header = TRUE)
 
 #3
-DF2 <- DF1[,c(2,5,8)]
+DF2<- select(DF1, hash, lesson_name, attempt)
 
 #4
-DF3 <-  DF2 %>% group_by(lesson_name, hash) %>% summarise(sum_key = sum(attempt), .groups = "keep")
+DF3 <-  DF2 %>% group_by(hash, lesson_name) %>% summarise(sum_key = sum(attempt), .groups = "keep")
 ```
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
@@ -242,8 +245,10 @@ DF3 <-  DF2 %>% group_by(lesson_name, hash) %>% summarise(sum_key = sum(attempt)
 6. Convert `DF3` to this format 
 
 ```{r}
+#6
+#Get rid of the NAs so the next step does not throw error and add extra column of NAs
+DF3 <- na.omit(DF3)
 DF3 <- spread(DF3, lesson_name, sum_key) 
-DF3 <- DF3[-c(2)]
 ```
 
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
@@ -252,7 +257,7 @@ DF3 <- DF3[-c(2)]
 
 ```{r}
 #7
-DF4 <- DF1[,c(2,4,8)]
+DF4 <- select(DF1, hash, lesson_name, correct)
 
 #8
 #Correct misspelled FALS at line 809 in swirl_data.csv and subsequent DF4 dataframe from DF1
@@ -266,20 +271,20 @@ DF4 <- DF4[complete.cases(DF4$correct),]
 
 #Converts logi to num so 0s and 1s instead of FALSE and TRUE
 DF4$correct <- as.numeric(DF4$correct) 
-
 ```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
 
 ```{r}
+#9
 DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_key = mean(correct), .groups = "keep")
 ```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
 ```{r}
-
-DF6 <- DF1[,c(7,4)]
+#10
+DF6 <- select(DF1, hash, lesson_name, datetime, correct)
 
 #steps to get TRUE/FALSE to 1/0
 DF6$correct <- ifelse(DF6$correct == "FALS", "FALSE", DF6$correct)
@@ -288,13 +293,12 @@ DF6 <- DF6[complete.cases(DF6$correct),]
 DF6$correct <- as.numeric(DF6$correct) 
 
 #Creating average correct for each day
-DF6 <- DF6 %>% group_by(datetime, correct) %>% summarise(meanByDay = mean(correct), .groups = "keep")
+DF6 <- DF6 %>% group_by(hash, datetime, correct) %>% summarise(meanByDay = mean(correct), .groups = "keep")
 
 #Convert 'datetime' to month-day-year by converting the parsed num***
 #library(lubridate)
 #dateConverted <- mdy_hms(DF6$datetime)
 #DF6 <- separate_rows(DF6, DF6$datetime, sep = "0")
-
 ```
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
