@@ -57,7 +57,7 @@ library(dplyr)
 S1 <- filter(S1, score <= 100)
 hist(S1$score)
 
-S2 <- data.frame(rep(100,9))
+S2 <- data.frame(rep(100, 100-nrow(S1)))
 names(S2) <- "score"
 S3 <- bind_rows(S1,S2)
 
