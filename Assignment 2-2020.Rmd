@@ -1,7 +1,7 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
-date: "September 24, 2020"
+author: "Paolo Rivas"
+date: "October 5, 2020"
 output: html_document
 ---
 #Part I
@@ -19,10 +19,13 @@ key,points = how many times a student skipped or increased the speed of a video
 ```{r}
 #Install the 'tidyverse' package or if that does not work, install the 'dplyr' and 'tidyr' packages.
 
+#install.packages('tidyverse')
+#install.packages("dplyr")
+
 #Load the package(s) you just installed
 
 library(tidyverse)
-library(tidyr)
+#library(tidyr)
 library(dplyr)
 
 D1 <- read.csv("video-data.csv", header = TRUE)
@@ -96,12 +99,27 @@ pairs(D5)
 #round() rounds numbers to whole number values
 #sample() draws a random samples from the groups vector according to a uniform distribution
 
+#Disclaimer: I might have made it a little bit more complicated by using cut and data.frame but that was the only way Icould manage to filter everything
 
+s <- rnorm(100, 75, 15) #creating random sample with a mean fof 75 and a 15 standar div. 
+p <- seq(0.01,1,0.01) #creating sequence of probabilistics
+s1 <- sample(s, 1000, prob = p, replace = TRUE)  #creating a sample of 1000 students, more than neccesary 
+s2 <- round(s1) #rounding numbers
+s3 <-cut(s2, c(0,25,50,75,100), label=c("sport", "music", "nature", "literature"))
+df1 <- data.frame("scores" = s2, "classification" = s3) #creating a new dataframe for our numbers
+df2 <- df1 %>% filter(scores <= 100) #filtering my new df1 with only those with less than 100 of score
+df3 <- df2 %>% slice(1:100) #slicing only the first 100 cases
+df3 #Final DataFrame
 ```
 
 2. Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
 
 ```{r}
+hist(df3$scores, breaks = 100,
+     xlab = "individual records",
+     xlim = c(30,100),
+     main = "Class Scores",
+     ylim = c(0,10))
 
 ```
 
@@ -111,6 +129,13 @@ pairs(D5)
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 
+#im going to arbitrarely cut my data into 3 pieces using quantiles just by looking at how they have naturally clustered.
+#im cutting using quantiles for a better distribution
+
+letters <- cut(df3$scores, quantile(df3$scores, c(0, 1/3, 2/3, 1)), labels = c("a", "b", "c"))
+letters
+df3$letters <- letters
+df3
 ```
 
 4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
@@ -122,30 +147,50 @@ library(RColorBrewer)
 #The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
 #Make RColorBrewer palette available to R and assign to your bins
 
+display.brewer.pal(3, "RdYlBu")
+display.brewer.pal(9, "Pastel1")
 #Use named palette in histogram
-
 ```
+```{r}
+library("ggplot2")
 
+histo <- ggplot(df3, aes(scores, fill = letters)) + geom_histogram(bins = 100)
+histo + scale_fill_brewer(palette= "Pastel1")
+```
 
 5. Create a boxplot that visualizes the scores for each interest group and color each interest group a different color.
 
 ```{r}
 #Make a vector of the colors from RColorBrewer
+vector_color = brewer.pal(4, 'Paired')
+
+bp<- ggplot(df3, aes(x=classification, y=scores,fill=classification)) +
+  geom_boxplot()
+bp_v <- bp  + scale_fill_brewer(c(vector_color))
+bp_v
+
 
 ```
-
 
 6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
 
 ```{r}
-
+#Found runif function which makes this truly easy
+logins <- runif(100, 1, 25)
+longins1<- round(logins)
+df3$logins <- longins1
+df3
 ```
 
 7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
 
 ```{r}
 
+SP <- ggplot(df3, aes(x=scores, y=logins, color=classification)) +
+  geom_point() + labs(title="Scores vs, Logins") +
+  theme_classic()  
 
+SP
 ```
 
 
@@ -153,13 +198,26 @@ library(RColorBrewer)
 
 ```{r}
 
-```
+data(AirPassengers)
+AP <- AirPassengers
+# Im taking a look at the class of the dataset AirPassengers
+class(AP)
 
+plot(AP,xlab="Date", ylab = "Passenger numbers (1000's)",main="Air Passenger numbers from 1949 to 1961")
+
+```
 
 9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropraiet to run a correlation on? 
 
 ```{r}
+data("iris") 
+dat_iris <- iris 
+class(iris)
+colnames(iris)
 
+pairs(iris[1:4], main = "Iris Data - 3 species", pch = 21, bg = c("red", "green", "blue")[unclass(iris$Species)], lower.panel=NULL, labels=c("SL","SW","PL","PW"), font.labels=2, cex.labels=4.5)
+
+#As we can see in the graphic it seams that sepal lenght and petal lenght and width are highly correlated (you can easily observe the liniallity)
 ```
 
 # Part III - Analyzing Swirl
@@ -168,10 +226,21 @@ library(RColorBrewer)
 
 In this repository you will find data describing Swirl activity from the class so far this semester. Please connect RStudio to this repository.
 
+
 ### Instructions
   
 1. Insert a new code block
 2. Create a data frame from the `swirl-data.csv` file called `DF1`
+
+```{r}
+
+library(tidyverse)
+library(dplyr)
+
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+
+```
+
 
 The variables are:
 
@@ -184,20 +253,95 @@ The variables are:
 `datetime` - the date and time the student attempted the question  
 `hash` - anonymyzed student ID  
 
+```{r}
+summary(DF1)
+```
+
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
 
+```{r}
+DF2<- DF1[, c("hash", "lesson_name", "attempt")]
+
+summary(DF2)
+
+```
+
 4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+
+```{r}
+
+DF3 <- DF2 %>% group_by(lesson_name) %>% summarise(value_count = n(), sum_hash = sum(hash))
+DF3
+```
+
 
 5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
 
 6. Convert `DF3` to this format  
 
+```{r}
+#install.packages("reshape2")
+library(reshape2)
+dcast(DF3, sum(value_count) ~ lesson_name)
+
+```
+
+
 7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
 
+```{r}
+
+DF4<- DF1[, c("hash", "lesson_name", "correct")]
+DF4
+```
+
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
+```{r}
+
+DF4$correct <- as.logical(DF4$correct)
+class(DF4$correct)
+
+ DF4_log <- DF4 %>% mutate_if(is.logical,as.numeric)
+ 
+ DF4_log
+```
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+```{r}
+
+DF5 <- DF1 %>% filter(correct == TRUE) #did not get the mean but this is important for the extra credit. I'll explain myself in the next task.
+DF5
+```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+
+```{r}
+
+DF5$datetime2 <- as.POSIXct(as.numeric(DF5$datetime), origin='1970-01-01') 
+class(DF5$datetime2)
+
+DF5$date_class <-NULL
+DF5
+#install.packages("lubridate")
+library(lubridate)
+
+DF5 %>%
+  mutate(datetime2 = floor_date(datetime2)) %>%
+  group_by(datetime2) %>%
+  summarize(attempt = sum(attempt)) #because all attemps where true, meaning a point.
+
+DF6 <- DF5 %>% group_by(month = month(datetime2), day = day(datetime2)) 
+
+
+DF6$month = as.factor(DF6$month)
+DF6$day = as.factor(DF6$day)
+
+ggplot(DF6, aes(day, attempt, group=month, col=month)) + 
+  geom_boxplot() +
+   geom_point()
+
+#I did something different. Did not get the mean but i got the attempts per day and
+#month that were true (meaning they got a point) and summed by day.
+```
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
