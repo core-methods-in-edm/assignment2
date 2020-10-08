@@ -100,7 +100,7 @@ hist(score, breaks = 30)
 S1 <- data.frame(score)
 S1 <- filter(S1, score <= 100)
 hist(S1$score)
-S2 <- data.frame(rep(100,7))
+S2 <- data.frame(rep(100, 6))
 names(S2) <- "score"
 S3 <- bind_rows(S1, S2)
 interest <- c("sport", "music", "nature", "literature")
@@ -235,5 +235,12 @@ head(DF5, 5)
 
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+```{r}
+DF6 <- select(DF1, 'datetime', 'correct')
+DF6$correct <- ifelse(DF6$correct == TRUE, 1, 0)
+class(DF6$datetime) <- c("POSIXt", "POSIXct")
+DF6$datetime <- format(DF6$datetime, format = "%m-%d-%Y")
+DF6 <- DF6 %>% group_by(datetime) %>% summarise(average = mean(correct, na.rm = TRUE))
+```
 
 Finally use the knitr function to generate an html document from your work. Commit, Push and Pull Request your work back to the main branch of the repository. Make sure you include both the .Rmd file and the .html file. 
