@@ -206,12 +206,12 @@ In this repository you will find data describing Swirl activity from the class s
 ### Instructions
   
 1. Insert a new code block
-```{r}
-DF1 <- read.csv("swirl-data.csv", header = TRUE)
-```
 
 2. Create a data frame from the `swirl-data.csv` file called `DF1`
 
+```{r}
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+```
 
 The variables are:
 
@@ -227,7 +227,7 @@ The variables are:
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
 
 ```{r}
-DF2 <- select(DF1,"hash", "lesson_name", "attempt" )
+DF2 <- select(DF1, "hash", "lesson_name", "attempt" )
 ```
 
 
@@ -266,7 +266,11 @@ head(DF5,5)
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 ```{r}
-
+DF6 <- select(DF1, 'datetime', 'correct')
+DF6$correct <- ifelse(DF6$correct == TRUE, 1, 0)
+DF6$datetime <- structure(DF6$datetime, class = c("POSIXt", "POSIXct"))
+DF6$datetime <- format(DF6$datetime, format = "%m-%d-%Y")
+DF6 <- DF6 %>% group_by(datetime) %>% summarise(average = mean(correct, na.rm = TRUE))
 ```
 
 
