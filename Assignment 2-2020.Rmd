@@ -1,6 +1,6 @@
 ---
 title: "Assignment 2"
-author: "Charles Lang"
+author: "Danny Shan"
 date: "September 24, 2020"
 output: html_document
 ---
