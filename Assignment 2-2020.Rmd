@@ -130,7 +130,8 @@ hist(student_df$stu_scores,breaks=c(0,10,20,30,40,50,60,70,80,90,100),main='Hist
 ```{r}
 #cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
 stu_scores_cut = cut(student_df$stu_scores,breaks = c(0,60,70,80,90,100),ordered_result = T,labels = c('F','D','C','B','A'))
-head(stu_scores_cut,10)
+student_df$breaks = stu_scores_cut
+head(student_df,10)
 
 ```
 
