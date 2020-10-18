@@ -239,7 +239,8 @@ The variables are:
 3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
 
 ```{r}
-DF2 <- data.frame(DF1$hash, DF1$lesson_name, DF1$attempt)
+library(tidyverse)
+DF2 <- select(DF1, hash, lesson_name, attempt)
 
 ```
 
@@ -247,7 +248,7 @@ DF2 <- data.frame(DF1$hash, DF1$lesson_name, DF1$attempt)
 
 ```{r}
 
-DF3 <- DF1 %>% group_by(lesson_name, hash) %>% summarise(att=sum(attempt))
+DF3 <- DF2 %>% group_by(lesson_name, hash) %>% summarise(att=sum(attempt))
 
 ```
 
@@ -258,8 +259,7 @@ DF3 <- DF1 %>% group_by(lesson_name, hash) %>% summarise(att=sum(attempt))
 
 ```{r}
 
-DF3 <- DF1 %>% group_by(lesson_name,hash) %>% summarise(att=sum(attempt))
-DF3 <- DF3 %>% group_by(lesson_name) %>% summarise(correct=mean(att))
+DF3 <- spread(DF3, lesson_name, att)
 
 ```
 
@@ -268,13 +268,14 @@ DF3 <- DF3 %>% group_by(lesson_name) %>% summarise(correct=mean(att))
 
 ```{r}
 
-DF4 <- data.frame(DF1$hash, DF1$lesson_name, DF1$correct)
+DF4 <- select(DF1, hash, lesson_name, correct)
 ```
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
 
 ```{r}
-DF4$correct <- ifelse(DF4$DF1.correct=="TRUE", 1, 0) #treat NAs as zeros because no answer has no credit (just created that rule!)
+DF4$correct <- ifelse(DF4$correct=="TRUE", 1, 
+                      ifelse(is.na(DF4$correct)==TRUE, NA, 0))
 
 ```
 
@@ -283,14 +284,15 @@ DF4$correct <- ifelse(DF4$DF1.correct=="TRUE", 1, 0) #treat NAs as zeros because
 
 
 ```{r}
-DF5 <- DF4 %>% group_by(DF1.hash, DF1.lesson_name) %>% summarise(score=sum(correct))
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(score=sum(correct))
 ```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
 ```{r}
 DF6 <- DF1
-DF6$correct <- ifelse(DF6$correct=="TRUE", 1, 0)
+DF6$correct <- ifelse(DF6$correct=="TRUE", 1, 
+                      ifelse(is.na(DF6$correct)==TRUE, NA, 0))
 DF6$date <- as.Date.POSIXct(DF6$datetime, origin = "1970-01-01")
 DF6 <- DF6 %>% group_by(date) %>% summarise(dailyaverage=mean(correct))
 ```
