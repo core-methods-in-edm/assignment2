@@ -232,14 +232,18 @@ DF4 <- select(DF1, c(hash,lesson_name,correct)) %>%mutate(correct= recode(correc
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
 ```{r}
-DF5 <-DF4 %>%  group_by(hash,lesson_name) %>% drop_na(correct)%>%  summarise(total_score=sum(correct), .groups='drop') %>% pivot_wider(names_from = lesson_name, values_from=total_score)
+DF5 <-DF4 %>%  group_by(hash,lesson_name) %>% drop_na(correct)%>%  summarise(mean_correct=mean(correct, na.rm = TRUE), .groups='drop') %>% pivot_wider(names_from = lesson_name, values_from=mean_correct)
 DF5
 ```
 
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 ```{r}
-
+DF6 <- select(DF1,correct,datetime)
+DF6$correct <- ifelse(DF6$correct== TRUE, 1,0)
+DF6$datetime <- as.POSIXlt(DF6$datetime, origin="1970-01-01 00:00.00 UTC")
+DF6$datetime <- strftime(DF6$datetime, format = "%b:%e")
+DF7 <- DF6 %>% group_by(datetime) %>% summarise(av_correct=mean(correct,na.rm = TRUE))
 ```
 
 
