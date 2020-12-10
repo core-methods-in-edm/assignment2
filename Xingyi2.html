@@ -1,0 +1,67 @@
+title: "Assignment 2_Xingyi Xie"
+name: "Xingyi Xie"
+date: "October 5, 2020"
+
+
+
+"1."
+scores<-rnorm(100,75)
+x<-c("sport","music","nature","literature")
+classification<-sample(x,100,replace = T)
+data<-data.frame(scores,classification)
+head(data)
+
+"2."
+hist(data$scores)
+hist(data$scores,breaks = 10)
+hist(data$scores,breaks = 20)
+hist(data$scores,breaks = c(70,72,74,76,78,80))
+hist(data$scores,breaks = 20,xlim = c(72,78))
+
+"3."
+rating<-cut(data$scores,3,c(1,2,3))
+
+"4."
+install.packages("RColorBrewer")
+library(RColorBrewer)
+color<-brewer.pal(4,"BuGn")
+hist(as.numeric(rating),breaks = 5,col = color)
+
+"5."
+boxplot(scores~classification,col=color)
+
+"6."
+logins<-sample(1:25,100,replace = T)
+
+"7."
+data<-data [, -(4:9)]
+head(data)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("datasets")
+library(datasets)
+data<-cbind(data,logins)
+ggplot(data,aes(scores,logins,colour=classification))+geom_point()+ggtitle("plot")
+
+"8."
+plot(AirPassengers)
+
+"9."
+library(datasets)
+plot(AirPassengers)
+
+
+
+"Part3."
+DF1<-read.csv("Home/Desktop/assignment2_XingyiXie/swirl-data.csv", header = TRUE))
+DF2<-data.frame(DF1$hash, DF1$lesson_name, DF1$attempt)
+Data<-group_by(DF2,lesson_name)
+DF3<-summarise(Data,sum_hash=sum(attempts))
+t(DF3)
+DF4<-data.frame(DF1$hash, DF1$lesson_name, DF1$correct)
+DF4$correct<-ifelse(DF4$correct=“T”，0，1)
+DF6<-as.Date(DF1$datetime, “%y/%m/%d”)
+
+
+
+
