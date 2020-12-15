@@ -166,7 +166,6 @@ dt3$login <- sample(1:25, 100, replace = TRUE)
 ```{r}
 plot(dt3$score,dt3$login, type = "p", main = "Relationship between Login and Scores",col = interest.col)
 
-
 ```
 
 
@@ -232,32 +231,8 @@ DF3
 
 6. Convert `DF3` to this format
 ```{r}
-DF10 <- DF2 %>% group_by(lesson_name) %>% summarise(attempt = sum(attempt))
-DF11 <- DF2 %>% group_by(hash) %>% summarise(attempt = sum(attempt))
-lesson_name <-as.matrix(DF10$lesson_name)
-hash_id <- as.matrix(DF11$hash)
-DF12 <- matrix(0,nrow = nrow(hash_id),ncol =length(lesson_name))
-colnames(DF12) <- lesson_name
-rownames(DF12) <- hash_id
-#DF12 <- DF12[,-1]
-
-DF13 <- DF2 %>% group_by(hash,lesson_name) %>% summarise(attempt = sum(attempt))
-
-for (i in 1:nrow(DF13)){
-  for (j in 1:nrow(DF12)){
-    if (DF13$hash[i] == rownames(DF12)[j]){
-      for (k in 1:ncol(DF12)){
-        if (DF13$lesson_name[i]==colnames(DF12)[k]){
-          DF12[j,k] <- DF13$attempt[i]
-        }
-      }
-      
-    }
-  }
-  
-}
-DF12
-
+DF3 <- na.omit(DF3)
+DF3b <- spread(DF3,lesson_name, attempt)
 ```
 
 
@@ -270,31 +245,26 @@ DF4 <- select(DF1, hash, lesson_name, correct)
 
 8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0`  
 ```{r}
-DF4$correct <- ifelse(DF4$correct== "TRUE", 1, 0)
+DF4$correct <- ifelse(DF4$correct== TRUE, 1,
+                      ifelse(is.na(DF4$correct)==TRUE,NA,0))
 ```
 
 
 9. Create a new data frame called `DF5` that provides a mean score for each student on each course
 ```{r}
-DF5 <- select(DF1, course_name, hash, correct)
-DF5$correct <- ifelse(DF5$correct== "TRUE", 1, 0)
-DF5 <- drop_na(DF5)
-
-DF6 <- DF5 %>% group_by(hash, course_name) %>% summarise(total_question = n())
-
-DF7 <- DF5 %>% group_by(hash, course_name, correct ==1) %>% summarise(correct = n())
-DF7 <- filter(DF7,`correct == 1` == TRUE)
-
-#Name the DF back to DF5 as required
-DF5 <-merge(DF6, DF7,by = c("hash","course_name"))
-DF5$mean = DF5$correct/DF5$total_question
-DF5 <- select(DF5, -c("correct == 1"))
-DF5
+DF5 <- DF4 %>% group_by(hash,lesson_name) %>% summarise(mean.correct = mean(correct, na.rm = TRUE))
 ```
 
 10. **Extra credit** Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
 
 ```{r}
+DF6 <- select(DF1, correct,datetime)
+DF6$correct <- ifelse(DF6$correct == TRUE, 1,0)
+DF6$datetime <- as.POSIXlt(DF6$datetime, origin = "1970-01-01 00:00.00 UTC")
+DF6$datetime <- strftime(DF6$datetime, format = "%b:%e")
+DF7 <- DF6 %>% group_by(datetime) %>% summarise(av.correct = mean(correct, na.rm = TRUE))
+DF7$datetime <- strptime(DF7$datetime, format = "%b:%e")
+# plot(DF7$datetime,DF7$av.correct)
 ```
 
 
