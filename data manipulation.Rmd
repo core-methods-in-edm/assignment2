@@ -1,5 +1,5 @@
 ---
-title: "Assignment 2"
+title: "Data Manipulation"
 author: "Stanley Zhao"
 date: "September 24, 2020"
 output: html_document
