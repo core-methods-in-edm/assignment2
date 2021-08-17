@@ -1,0 +1,285 @@
+---
+title: "Data-Wrangling-Visualization"
+author: "Nicole Schlosberg"
+date: "September 29, 2020"
+output: html_document
+---
+
+
+## Part I
+
+## Data Wrangling
+In the hackathon a project was proposed to collect data from student video watching, a sample of this data is available in the file video-data.csv.
+
+```{r}
+#library(tidyverse)
+library(tidyr)
+library(dplyr)
+
+D1 <- read.csv("video-data.csv", header = TRUE)
+
+#Create a data frame that only contains the years 2018
+D2 <- filter(D1, year == 2018)
+```
+
+## Histograms
+```{r}
+#Generate a histogram of the watch time for the year 2018
+hist(D2$watch.time)
+
+#Change the number of breaks to 100, do you get the same impression?
+hist(D2$watch.time, breaks = 100)
+
+#Cut the y-axis off at 10
+hist(D2$watch.time, breaks = 100, ylim = c(0,10))
+
+#Restore the y-axis and change the breaks so that they are 0-5, 5-20, 20-25, 25-35
+hist(D2$watch.time, breaks = c(0,5,20,25,35))
+```
+
+## Plots
+```{r}
+#Plot the number of confusion points against the watch time
+plot(D1$confusion.points, D1$watch.time)
+
+#Create two variables x & y
+x <- c(1,3,2,7,6,4,4)
+y <- c(2,4,2,3,2,4,3)
+
+#Create a table from x & y
+table1 <- table(x,y)
+
+#Display the table as a Barplot
+barplot(table1)
+
+#Create a data frame of the average total key points for each year and plot the two against each other as a lines
+D3 <- D1 %>% group_by(year) %>% summarise(mean_key = mean(key.points))
+plot(D3$year, D3$mean_key, type = "l", lty = "dashed")
+
+#Create a boxplot of total enrollment for three students
+D4 <- filter(D1, stid == 4|stid == 20| stid == 22)
+#The drop levels command will remove all the schools from the variable with no data  
+D4 <- droplevels(D4)
+boxplot(D4$watch.time~D4$stid, xlab = "Student", ylab = "Watch Time")
+```
+
+## Pairs
+```{r}
+#Use matrix notation to select columns 2, 5, 6, and 7
+D5 <- D1[,c(2,5,6,7)]
+#Draw a matrix of plots for every combination of variables
+pairs(D5)
+```
+
+## Part II
+
+1. Create a simulated data set containing 100 students, each with a score from 1-100 representing performance in an educational game. The scores should tend to cluster around 75. Also, each student should be given a classification that reflects one of four interest groups: sport, music, nature, literature.
+
+```{r}
+#rnorm(100, 75, 15) creates a random sample with a mean of 75 and standard deviation of 15
+#filter() can be used to set max min value and can only work with a data frame, for rows
+#select() for columns
+#round() rounds numbers to whole number values
+#sample() draws a random samples from the groups vector according to a uniform distribution
+
+score <- rnorm(100,75,15)
+hist(score,breaks = 30)
+S1 <- data.frame(score)
+
+#Top and tail the scores
+S1 <- filter(S1, score <= 100)
+hist(S1$score)
+
+S2 <- data.frame(rep(100,5)) #repeat 100 5 times and names the column a random name that is not helpful so use the names() command to rename
+names(S2) <- "score"
+S3 <- bind_rows(S1,S2) #must make sure that the names of the columns and the type match
+
+#S3$score <- ifelse(S3$score >= 100, 100, S3$score)
+
+S3$score <-round(S3$score,0)
+
+interest <- c("sport", "music", "nature", "liturature")
+S3$interest <- sample(interest, 100, replace = TRUE)
+S3$stid <- seq(1,100,1)
+```
+
+2. **Using base R commands, draw a histogram of the scores. Change the breaks in your histogram until you think they best represent your data.
+
+```{r}
+hist(S3$score, breaks = 10)
+```
+
+3. Create a new variable that groups the scores according to the breaks in your histogram.
+
+```{r}
+#cut() divides the range of scores into intervals and codes the values in scores according to which interval they fall. We use a vector called `letters` as the labels, `letters` is a vector made up of the letters of the alphabet.
+label <- letters[1:10]
+S3$breaks <- cut(S3$score, breaks = 10, labels = label)
+```
+
+4. Now using the colorbrewer package (RColorBrewer; http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3) design a pallette and assign it to the groups in your data on the histogram.
+
+```{r}
+library(RColorBrewer)
+#Let's look at the available palettes in RColorBrewer
+display.brewer.all()
+#The top section of palettes are sequential, the middle section are qualitative, and the lower section are diverging.
+#Make RColorBrewer palette available to R and assign to your bins
+
+S3$colors <- brewer.pal(10, "BrBG")
+#Use named palette in histogram
+hist(S3$score, col = S3$colors)
+```
+
+5. Create a boxplot that visualizes the scores for each interest group and color each interest group a different color.
+
+```{r}
+#Make a vector of the colors from RColorBrewer
+interest.col <- brewer.pal(4, "BuPu")
+boxplot(score ~ interest, S3, col = interest.col)
+```
+
+6. Now simulate a new variable that describes the number of logins that students made to the educational game. They should vary from 1-25.
+
+```{r}
+S3$login <- sample(1:25, 100, replace = TRUE)
+```
+
+7. Plot the relationships between logins and scores. Give the plot a title and color the dots according to interest group.
+
+```{r}
+plot(S3$score, S3$login, main = "Login vs. Score", xlab = "Score", ylab = "Login", col = interest.col) 
+```
+
+8. R contains several inbuilt data sets, one of these in called AirPassengers. Plot a line graph of the the airline passengers over time using this data set.
+
+```{r}
+plot(AirPassengers, type = "l", xlab = "Date", ylab = "Passenger numbers") 
+```
+
+9. Using another inbuilt data set, iris, plot the relationships between all of the variables in the data set. Which of these relationships is it appropriate to run a correlation on? 
+
+```{r}
+plot(iris)
+plot(iris$Sepal.Length,iris$Sepal.Width)
+plot(iris$Petal.Length,iris$Petal.Width)
+plot(iris$Petal.Length,iris$Sepal.Length)
+plot(iris$Petal.Width,iris$Sepal.Width)
+plot(iris$Petal.Width,iris$Sepal.Length)
+plot(iris$Petal.Length,iris$Sepal.Width)
+plot(iris$Species,iris$Sepal.Width, xlab = "Species", ylab = "Sepal Width")
+plot(iris$Species,iris$Sepal.Length, xlab = "Species", ylab = "Sepal Length")
+plot(iris$Species,iris$Petal.Width, xlab = "Species", ylab = "Petal Width")
+plot(iris$Species,iris$Petal.Length, xlab = "Species", ylab = "Petal Length")
+
+#Which of these relationships is it appropriate to run a correlation on?
+#Correlation between Sepal Length and Width
+corOfSepalLW <- cor(iris$Sepal.Length, iris$Sepal.Width)
+#Correlation between Petal Length and Width
+corOfPetalLW <- cor(iris$Petal.Length, iris$Petal.Width)
+#Correlation between Petal Length and Sepal Length
+corOfLengthPS <- cor(iris$Petal.Length, iris$Sepal.Length)
+#Correlation between Petal Width and Sepal Width
+corOfWidthPS <- cor(iris$Petal.Width, iris$Sepal.Width)
+```
+
+# Part III - Analyzing Swirl
+
+## Data 
+
+In this repository you will find data describing Swirl activity from the class so far this semester. Please connect RStudio to this repository.
+
+### Instructions
+  
+1. Insert a new code block
+
+2. Create a data frame from the `swirl-data.csv` file called `DF1`
+
+The variables are:
+
+`course_name` - the name of the R course the student attempted  
+`lesson_name` - the lesson name  
+`question_number` - the question number attempted
+`correct` - whether the question was answered correctly  
+`attempt` - how many times the student attempted the question  
+`skipped` - whether the student skipped the question  
+`datetime` - the date and time the student attempted the question  
+`hash` - anonymyzed student ID  
+
+3. Create a new data frame that only includes the variables `hash`, `lesson_name` and `attempt` called `DF2`
+
+4. Use the `group_by` function to create a data frame that sums all the attempts for each `hash` by each `lesson_name` called `DF3`
+
+```{r}
+#2
+DF1 <- read.csv("swirl-data.csv", header = TRUE)
+
+#3
+DF2<- select(DF1, hash, lesson_name, attempt)
+
+#4
+DF3 <-  DF2 %>% group_by(hash, lesson_name) %>% summarise(sum_key = sum(attempt), .groups = "keep")
+```
+
+5. On a scrap piece of paper draw what you think `DF3` would look like if all the lesson names were column names
+
+6. Convert `DF3` to this format 
+
+```{r}
+#6
+#Get rid of the NAs so the next step does not throw error and add extra column of NAs
+DF3 <- na.omit(DF3)
+DF3 <- spread(DF3, lesson_name, sum_key) 
+```
+
+7. Create a new data frame from `DF1` called `DF4` that only includes the variables `hash`, `lesson_name` and `correct`
+
+8. Convert the `correct` variable so that `TRUE` is coded as the **number** `1` and `FALSE` is coded as `0` 
+
+```{r}
+#7
+DF4 <- select(DF1, hash, lesson_name, correct)
+
+#8
+#Correct misspelled FALS at line 809 in swirl_data.csv and subsequent DF4 dataframe from DF1
+DF4$correct <- ifelse(DF4$correct == "FALS", "FALSE", DF4$correct)
+
+#Convert the chr that was created with last back to logi
+DF4$correct <- type.convert(DF4$correct) 
+
+#Get rid of the NAs so the next steps do not throw "NAs introduced by coercion"
+DF4 <- DF4[complete.cases(DF4$correct),]
+
+#Converts logi to num so 0s and 1s instead of FALSE and TRUE
+DF4$correct <- as.numeric(DF4$correct) 
+```
+
+9. Create a new data frame called `DF5` that provides a mean score for each student on each course
+
+```{r}
+#9
+DF5 <- DF4 %>% group_by(hash, lesson_name) %>% summarise(mean_key = mean(correct), .groups = "keep")
+```
+
+10. Convert the `datetime` variable into month-day-year format and create a new data frame (`DF6`) that shows the average correct for each day
+
+```{r}
+#10
+DF6 <- select(DF1, hash, lesson_name, datetime, correct)
+
+#steps to get TRUE/FALSE to 1/0
+DF6$correct <- ifelse(DF6$correct == "FALS", "FALSE", DF6$correct)
+DF6$correct <- type.convert(DF6$correct) 
+DF6 <- DF6[complete.cases(DF6$correct),]
+DF6$correct <- as.numeric(DF6$correct) 
+
+#Creating average correct for each day
+DF6 <- DF6 %>% group_by(hash, datetime, correct) %>% summarise(meanByDay = mean(correct), .groups = "keep")
+
+#Convert 'datetime' to month-day-year by converting the parsed num***
+#library(lubridate)
+#dateConverted <- mdy_hms(DF6$datetime)
+#DF6 <- separate_rows(DF6, DF6$datetime, sep = "0")
+```
+
+
